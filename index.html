@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frankie's Piggy</title>
+<title>Frankie's Piggies</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -944,7 +944,7 @@
     </div>
     <div id="shelter-label">🚨 Take Shelter!</div>
   </div>
-  <div id="barn-btn">🐄</div>
+  <div id="barn-btn">🐖</div>
   <div id="barn-hud-label">🐷 Barn</div>
   <div id="house-btn">🏠</div>
   <div id="house-label">Kitchen</div>
@@ -1082,11 +1082,34 @@ let barnRefreshCounter = 0;
 function saveBarnPiggies() {
   localStorage.setItem('barnPiggies', JSON.stringify(barnPiggies));
 }
+
+// ========= GAME SAVE / LOAD =========
+function saveGameState() {
+  localStorage.setItem('gameState', JSON.stringify({
+    money,
+    baconCount,
+    ownedPigSkins: pigSkins.filter(s => s.owned).map(s => s.id),
+    ownedPanSkins: panSkins.filter(s => s.owned).map(s => s.id),
+    currentPigSkinId: currentPigSkin.id,
+    currentPanSkinId: currentPanSkin.id,
+  }));
+}
+function loadGameState() {
+  const saved = JSON.parse(localStorage.getItem('gameState') || 'null');
+  if (!saved) return;
+  money = saved.money || 0;
+  baconCount = saved.baconCount || 0;
+  if (saved.ownedPigSkins) pigSkins.forEach(s => { if (saved.ownedPigSkins.includes(s.id)) s.owned = true; });
+  if (saved.ownedPanSkins) panSkins.forEach(s => { if (saved.ownedPanSkins.includes(s.id)) s.owned = true; });
+  if (saved.currentPigSkinId) currentPigSkin = pigSkins.find(s => s.id === saved.currentPigSkinId) || pigSkins[0];
+  if (saved.currentPanSkinId) currentPanSkin = panSkins.find(s => s.id === saved.currentPanSkinId) || panSkins[0];
+}
 function randomPigName() {
   return barnPigNames[Math.floor(Math.random() * barnPigNames.length)];
 }
 function getAge(pig) {
-  return Math.min(100, (Date.now() - pig.birthTime) / 1000 / 3600);
+  // 1 real day = 100 age (max)
+  return Math.min(100, (Date.now() - pig.birthTime) / 1000 * (100 / 86400));
 }
 function adoptToBarn(pig) {
   const now = Date.now();
@@ -1134,7 +1157,7 @@ function createPigCard(pig) {
     <div class="pig-card-pig${rainbowClass}" style="--pig-color:${pig.skinColor};--pig-nose:${pig.skinNose};--pig-nostril:${pig.skinNostril};--pig-ear:${pig.skinEar};">${createPigHTML()}</div>
     <div class="pig-card-name">${pig.name} ${getHappinessEmoji(happiness)}</div>
     <div class="pig-happiness">${getHappinessHearts(happiness)}</div>
-    <div class="pig-card-age">${Math.floor(age)} / 100 hours</div>
+    <div class="pig-card-age">Age ${Math.floor(age)} / 100</div>
     <div class="age-bar-wrap"><div class="age-bar" style="width:${age}%;background:${barColor};"></div></div>
     <div class="pig-card-status">${statusHtml}</div>
   `;
@@ -1391,6 +1414,8 @@ const panSkins = [
 
 let currentPigSkin = pigSkins[0];
 let currentPanSkin = panSkins[0];
+
+loadGameState(); // restore money, bacon, owned skins from previous session
 
 // ========= DOM =========
 const moneyDisplay = document.getElementById('money-display');
@@ -1684,8 +1709,9 @@ function renderShop() {
     div.className = 'shop-item';
     if (skin.owned) div.classList.add('owned');
     if (skin.id === currentPigSkin.id) div.classList.add('selected');
+    const rainbowClass = skin.id === 'rainbow' ? ' rainbow-skin' : '';
     div.innerHTML = `
-      <div class="preview" style="width:50px;height:40px;background:${skin.color};border-radius:50%;margin:0 auto 6px;"></div>
+      <div class="preview${rainbowClass}" style="--pig-color:${skin.color};--pig-nose:${skin.nose};--pig-nostril:${skin.nostril};--pig-ear:${skin.ear};transform:scale(0.55);transform-origin:top center;height:44px;overflow:hidden;">${createPigHTML()}</div>
       <div class="item-name">${skin.name}</div>
       <div class="item-price ${skin.price === 0 ? 'free' : ''}">${skin.owned ? (skin.id === currentPigSkin.id ? 'Using' : 'Owned') : '$' + skin.price}</div>
     `;
@@ -1693,6 +1719,7 @@ function renderShop() {
       if (skin.owned) {
         currentPigSkin = skin;
         applyPigSkin();
+        saveGameState();
         renderShop();
       } else if (money >= skin.price) {
         money -= skin.price;
@@ -1723,6 +1750,7 @@ function renderShop() {
       if (skin.owned) {
         currentPanSkin = skin;
         fryingPan.textContent = skin.emoji;
+        saveGameState();
         renderShop();
       } else if (money >= skin.price) {
         money -= skin.price;
@@ -1795,6 +1823,7 @@ function applyPigSkin() {
 function updateHUD() {
   moneyDisplay.textContent = '$' + money;
   baconDisplay.textContent = baconCount + ' 🥓';
+  saveGameState();
 }
 
 // ========= ANIMATION LOOP (handles all piggies) =========
@@ -2165,6 +2194,8 @@ document.getElementById('shelter-btn').addEventListener('click', () => {
 
 // ========= START =========
 spawnYardPiggies(4);
+applyPigSkin(); // apply saved skin to yard pigs
+fryingPan.textContent = currentPanSkin.emoji; // apply saved pan skin
 requestAnimationFrame(animate);
 updateHUD();
 scheduleNextDisaster(); // first disaster in 20 sec, then every 20 sec
