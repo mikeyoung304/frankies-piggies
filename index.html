@@ -1054,10 +1054,6 @@ function playScaredOink() {
   setTimeout(() => playOink(), 300);
 }
 
-function pigSays() {
-  playScaredOink();
-}
-
 const pigPhrases = [
   "No, don't pick me up!",
   "Hey! Put me down!",
@@ -1462,9 +1458,9 @@ document.getElementById('yard').addEventListener('click', (e) => {
     pickedUpPiggies.push(closest);
     closest.el.classList.add('picked-up');
     playScaredOink();
-    pigSays(pigPhrases[Math.floor(Math.random() * pigPhrases.length)]);
+    const phrase = pigPhrases[Math.floor(Math.random() * pigPhrases.length)];
     const count = pickedUpPiggies.length;
-    showMessage(count === 1 ? 'Piggy picked up! Catch more or go to the kitchen!' : count + ' piggies! Go to the kitchen!');
+    showMessage(count === 1 ? phrase : count + ' piggies! Go to the kitchen!');
   }
 });
 
@@ -1851,7 +1847,6 @@ function animate() {
           pig.vy -= (dy / dist) * push * pushStr;
         } else {
           pig.wanderTimer--;
-          pig.eatingTimer--;
 
           // No eating during panic
           if (!isPanicking && pig.eatingTimer <= 0 && !pig.isEating && Math.random() < 0.008) {
@@ -1864,7 +1859,10 @@ function animate() {
           if (pig.isEating) {
             pig.eatingTimer--;
             if (pig.eatingTimer <= 0) pig.isEating = false;
-          } else if (pig.wanderTimer <= 0) {
+          } else {
+            pig.eatingTimer--;
+          }
+          if (!pig.isEating && pig.wanderTimer <= 0) {
             const angle = Math.random() * Math.PI * 2;
             const speed = isPanicking ? 1.2 : 0.3;
             pig.wanderDirX = Math.cos(angle) * speed;
