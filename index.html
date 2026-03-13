@@ -83,9 +83,9 @@
   /* --- SHOP --- */
   #shop {
     background: linear-gradient(135deg, #fff3e0, #ffe0b2, #ffcc80);
+    overflow-y: auto;
   }
 
-  /* (follower-piggy rules moved to .yard-piggy above) */
   .pig-body-wrap {
     position: relative;
     width: 80px;
@@ -107,9 +107,11 @@
     position: absolute; top: 8px;
     width: 6px; height: 7px;
     background: #333; border-radius: 50%;
+    transition: height 0.08s ease, top 0.08s ease, border-radius 0.08s ease;
   }
   .pig-eye.right-eye { right: 8px; }
   .pig-eye.left-eye { right: 18px; }
+  .pig-eye.winking { height: 2px; top: 11px; border-radius: 1px; }
   .pig-nose {
     position: absolute; top: 14px; right: 2px;
     width: 16px; height: 11px;
@@ -175,6 +177,182 @@
     50% { transform: rotate(-20deg); }
   }
 
+  /* ========= DISASTER SYSTEM ========= */
+  #disaster-warning {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    z-index: 400; display: none; flex-direction: column; align-items: center;
+    pointer-events: none;
+  }
+  #disaster-warning.active { display: flex; }
+  .disaster-warn-box {
+    background: rgba(170,0,0,0.95); border-radius: 0 0 22px 22px;
+    padding: 10px 28px 16px; text-align: center;
+    box-shadow: 0 4px 40px rgba(255,0,0,0.6);
+    animation: warn-pulse 0.5s ease-in-out infinite alternate;
+    pointer-events: auto; min-width: 280px;
+  }
+  @keyframes warn-pulse {
+    from { box-shadow: 0 4px 20px rgba(255,0,0,0.4); }
+    to   { box-shadow: 0 4px 60px rgba(255,60,0,0.95); }
+  }
+  .dw-icon     { font-size: 44px; line-height: 1.1; }
+  .dw-name     { font-size: 24px; font-weight: 900; color: #FFD700; letter-spacing: 3px; }
+  .dw-sub      { font-size: 14px; color: #ffdddd; font-weight: 600; margin: 2px 0 4px; }
+  .dw-count    { font-size: 56px; font-weight: 900; color: white; line-height: 1;
+                 text-shadow: 0 0 20px rgba(255,120,0,0.9); }
+  .dw-count.urgent { color: #ff4444; animation: count-throb 0.2s ease-in-out infinite; }
+  @keyframes count-throb {
+    0%,100% { transform: scale(1); }
+    50%     { transform: scale(1.12); }
+  }
+  /* Danger vignette on yard during warning */
+  #yard.disaster-mode::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    box-shadow: inset 0 0 100px 40px rgba(255,0,0,0.35);
+    animation: vignette-pulse 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes vignette-pulse {
+    from { opacity: 0.4; }
+    to   { opacity: 1; }
+  }
+  /* ===== DISASTER VISUAL BACKGROUNDS ===== */
+  #yard.sky-tornado {
+    background: linear-gradient(180deg, #0d1f05 0%, #1a2e08 45%, #2e4a10 60%, #1a3008 100%) !important;
+    transition: background 0.4s;
+  }
+  #yard.sky-hurricane {
+    background: linear-gradient(180deg, #02050f 0%, #05102a 40%, #0a1e3a 60%, #0d2040 100%) !important;
+    transition: background 0.4s;
+  }
+  #yard.sky-earthquake {
+    background: linear-gradient(180deg, #1a0a00 0%, #3a1800 40%, #5a2800 60%, #3a1800 100%) !important;
+    transition: background 0.4s;
+  }
+  /* Tornado funnel */
+  #d-funnel {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    z-index: 60; pointer-events: none;
+  }
+  #d-funnel .funnel-cloud {
+    width: 220px; height: 80px;
+    background: radial-gradient(ellipse at center, #222 0%, #444 50%, transparent 80%);
+    border-radius: 50%; margin: 0 auto;
+    box-shadow: 0 0 80px 30px rgba(0,0,0,0.6);
+  }
+  #d-funnel .funnel-stem {
+    width: 0; height: 0;
+    border-left: 60px solid transparent;
+    border-right: 60px solid transparent;
+    border-top: 280px solid rgba(40,40,55,0.88);
+    margin: 0 auto;
+    filter: blur(6px);
+    transform-origin: top center;
+    animation: tornado-spin 0.2s linear infinite;
+  }
+  /* Hurricane rain canvas */
+  #d-rain {
+    position: absolute; inset: 0;
+    z-index: 60; pointer-events: none;
+  }
+  /* Hurricane banner */
+  #d-hurricane-icon {
+    position: absolute; top: 20px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 140px; z-index: 61; pointer-events: none;
+    animation: tornado-spin 2s linear infinite;
+    opacity: 0.65;
+  }
+  /* Earthquake crack */
+  .d-crack {
+    position: absolute; height: 5px;
+    background: linear-gradient(90deg, transparent, #1a0800 25%, #3a1800 50%, #1a0800 75%, transparent);
+    z-index: 60; pointer-events: none;
+    clip-path: inset(0 100% 0 0);
+    animation: crack-split 0.4s ease-out forwards;
+  }
+  /* Earthquake dust */
+  .d-dust {
+    position: absolute; width: 55px; height: 55px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,130,60,0.85) 0%, transparent 70%);
+    z-index: 61; pointer-events: none;
+    animation: dust-rise 1.5s ease-out forwards;
+  }
+  /* Earthquake shake on yard */
+  #yard.quake-rumble {
+    animation: quake-mild 0.12s ease-in-out infinite;
+  }
+  /* Strike overlay */
+  #disaster-overlay {
+    position: fixed; inset: 0; z-index: 600;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 20px;
+  }
+  #disaster-overlay.active { display: flex; }
+  .ds-icon  { font-size: 110px; animation: spin-strike 0.7s linear infinite; }
+  @keyframes spin-strike { to { transform: rotate(360deg); } }
+  .ds-title { font-size: 46px; font-weight: 900; color: white;
+              text-shadow: 0 4px 16px rgba(0,0,0,0.7); margin: 10px 0 6px; }
+  .ds-damage { font-size: 22px; color: white; font-weight: 700; white-space: pre-line;
+               text-shadow: 0 2px 8px rgba(0,0,0,0.6); margin-bottom: 8px; max-width: 340px; }
+  .ds-ok-btn {
+    margin-top: 14px; background: white; color: #333; border: none;
+    font-size: 18px; font-weight: 700; padding: 12px 44px;
+    border-radius: 50px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transition: transform 0.15s;
+  }
+  .ds-ok-btn:hover { transform: scale(1.06); }
+  /* Earthquake screen shake */
+  .quake-shake { animation: quake 0.08s ease-in-out infinite !important; }
+  @keyframes quake {
+    0%,100% { transform: translate(0,0); }
+    25%     { transform: translate(-6px,3px); }
+    75%     { transform: translate(6px,-3px); }
+  }
+  /* Mild yard rumble during earthquake warning */
+  @keyframes quake-mild {
+    0%,100% { transform: translate(0,0); }
+    25%     { transform: translate(-3px,1px); }
+    75%     { transform: translate(3px,-1px); }
+  }
+  /* Crack lines */
+  @keyframes crack-split {
+    from { clip-path: inset(0 100% 0 0); opacity:1; }
+    to   { clip-path: inset(0 0% 0 0);   opacity:1; }
+  }
+  /* Dust puff */
+  @keyframes dust-rise {
+    from { opacity: 0.8; transform: scale(0.5) translateY(0); }
+    to   { opacity: 0;   transform: scale(3)   translateY(-50px); }
+  }
+  @keyframes tornado-spin {
+    to { transform: rotate(360deg) skewX(8deg); }
+  }
+
+  /* ========= RAINBOW PIG SKIN ========= */
+  .rainbow-skin .pig-body {
+    background: linear-gradient(120deg, #ff4444, #ff9500, #ffd700, #44cc44, #3399ff, #9933ff, #ff44cc) !important;
+  }
+  .rainbow-skin .pig-head {
+    background: linear-gradient(135deg, #ffd700, #44cc44, #3399ff, #9933ff) !important;
+  }
+  .rainbow-skin .pig-ear  { background: #ff9500 !important; }
+  .rainbow-skin .pig-nose { background: #44cc44 !important; }
+  .rainbow-skin .pig-nostril { background: #1a7acc !important; }
+  .rainbow-skin .pig-leg  { background: #3399ff !important; }
+  .rainbow-skin .pig-hoof { background: #9933ff !important; }
+  .rainbow-skin .pig-tail {
+    border-color: #ff44cc transparent transparent #ff44cc !important;
+  }
+  .rainbow-skin {
+    animation: rainbow-shimmer 4s linear infinite;
+  }
+  @keyframes rainbow-shimmer {
+    0%   { filter: hue-rotate(0deg)   saturate(1.6) brightness(1.05); }
+    100% { filter: hue-rotate(360deg) saturate(1.6) brightness(1.05); }
+  }
+
   /* ========= HOUSE BUTTON (yard) ========= */
   #house-btn {
     position: absolute; bottom: 18%; right: 8%;
@@ -188,6 +366,22 @@
     background: rgba(0,0,0,0.5); color: white;
     padding: 6px 16px; border-radius: 20px;
     font-size: 14px; font-weight: 600; z-index: 60;
+  }
+
+  /* ========= BARN BUTTON (yard, next to house) ========= */
+  #barn-btn {
+    position: absolute; bottom: 18%; right: 20%;
+    font-size: 80px; cursor: pointer; z-index: 60;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+    transition: transform 0.2s;
+    line-height: 1;
+  }
+  #barn-btn:hover { transform: scale(1.15); }
+  #barn-hud-label {
+    position: absolute; bottom: 9%; right: 18%;
+    background: rgba(139,69,19,0.85); color: white;
+    padding: 6px 18px; border-radius: 20px;
+    font-size: 15px; font-weight: 700; z-index: 60;
   }
 
   /* ========= MONEY HUD ========= */
@@ -240,19 +434,20 @@
   }
 
   /* ========= KITCHEN BUTTONS ========= */
+  .kitchen-btn-row {
+    position: absolute; bottom: 4%; left: 0; right: 0; z-index: 60;
+    display: flex; justify-content: center; align-items: center;
+    gap: 12px; padding: 0 16px;
+  }
   .kitchen-btn {
-    position: absolute; z-index: 60;
     background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-    border: none; color: white; font-size: 18px; font-weight: 700;
-    padding: 12px 30px; border-radius: 50px; cursor: pointer;
+    border: none; color: white; font-size: 16px; font-weight: 700;
+    padding: 12px 22px; border-radius: 50px; cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: transform 0.15s;
+    transition: transform 0.15s; white-space: nowrap; flex-shrink: 0;
   }
   .kitchen-btn:hover { transform: scale(1.05); }
-  #sell-btn { bottom: 4%; left: 50%; transform: translateX(-50%); }
-  #sell-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: translateX(-50%); }
-  #back-to-yard { bottom: 4%; left: 8%; }
-  #go-shop { bottom: 4%; right: 8%; }
+  #sell-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* ========= CUSTOMERS ========= */
   .kitchen-register {
@@ -506,6 +701,176 @@
     padding: 8px 20px; border-radius: 20px;
     font-size: 14px; z-index: 100; backdrop-filter: blur(6px);
   }
+
+
+  /* ========= BARN SCREEN ========= */
+  #barn {
+    background: linear-gradient(180deg, #5C3317 0%, #8B5A2B 30%, #D2B48C 100%);
+    overflow-y: auto;
+  }
+  .barn-screen-header {
+    text-align: center; padding: 20px 0 8px;
+    color: #FFF8DC; font-size: 30px; font-weight: 900;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  #barn-list {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    justify-content: center; padding: 10px 20px 100px;
+  }
+  .barn-empty-msg {
+    text-align: center; padding: 80px 20px;
+    color: #FFF8DC; font-size: 20px; font-weight: 600; opacity: 0.85;
+  }
+  .barn-back-btn {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #8B4513, #6B3410);
+    border: none; color: white; font-size: 18px; font-weight: 700;
+    padding: 12px 40px; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 60;
+  }
+  .barn-back-btn:hover { transform: translateX(-50%) scale(1.05); }
+
+  /* ========= PIG CARDS (barn) ========= */
+  .pig-card {
+    background: white; border-radius: 20px;
+    padding: 16px; width: 190px; text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    border: 3px solid transparent; transition: transform 0.15s;
+    position: relative; overflow: visible;
+  }
+  .pig-card:hover { transform: scale(1.03); }
+  .pig-card.ready {
+    border-color: #e53935;
+    animation: card-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes card-pulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(229,57,53,0.3); }
+    50% { box-shadow: 0 6px 28px rgba(229,57,53,0.7); }
+  }
+  .pig-card-pig {
+    height: 54px; display: flex; justify-content: center;
+    align-items: center; overflow: hidden; margin-bottom: 4px;
+  }
+  .pig-card-pig .pig-body-wrap { transform: scale(0.65); flex-shrink: 0; }
+  .pig-card-name { font-size: 17px; font-weight: 900; color: #333; margin: 2px 0; }
+  .pig-card-age { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .age-bar-wrap {
+    background: #eee; border-radius: 8px; height: 12px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .age-bar { height: 100%; border-radius: 8px; transition: width 0.5s; }
+  .pig-card-status { font-size: 13px; font-weight: 600; margin-bottom: 6px; min-height: 20px; }
+  .ready-badge {
+    background: #e53935; color: white;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 10px; display: inline-block;
+  }
+  .pig-card-feed-btn {
+    background: linear-gradient(135deg, #4CAF50, #388E3C);
+    border: none; color: white; font-size: 14px; font-weight: 700;
+    padding: 8px 16px; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%; transition: transform 0.1s;
+  }
+  .pig-card-feed-btn:hover { transform: scale(1.05); }
+  .pig-card-cook-btn {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border: none; color: white; font-size: 14px; font-weight: 700;
+    padding: 8px 16px; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%;
+    transition: transform 0.1s; margin-top: 6px;
+  }
+  .pig-card-cook-btn:hover { transform: scale(1.05); }
+
+  /* ========= TORNADO SHELTER (yard) ========= */
+  #shelter-btn {
+    position: absolute; bottom: 16%; left: 50%; transform: translateX(-50%);
+    display: none; cursor: pointer; z-index: 80; text-align: center;
+    animation: shelter-rise 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #shelter-btn.visible { display: block; }
+  @keyframes shelter-rise {
+    from { transform: translateX(-50%) translateY(80px); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+  }
+  .shelter-dome {
+    width: 120px; height: 80px;
+    background: linear-gradient(180deg, #607D8B, #455A64);
+    border-radius: 60px 60px 6px 6px;
+    position: relative;
+    border: 4px solid #37474F;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5),
+                0 0 0 4px rgba(255,220,0,0.5),
+                0 0 30px 8px rgba(255,220,0,0.3);
+    animation: shelter-glow 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes shelter-glow {
+    from { box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,220,0,0.4), 0 0 20px 6px rgba(255,220,0,0.2); }
+    to   { box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,220,0,0.9), 0 0 40px 14px rgba(255,220,0,0.5); }
+  }
+  .shelter-stripe {
+    position: absolute; top: 14px; left: 0; right: 0;
+    height: 12px; background: repeating-linear-gradient(90deg, #FFD700 0px, #FFD700 12px, #455A64 12px, #455A64 24px);
+    opacity: 0.7;
+  }
+  .shelter-sign {
+    position: absolute; top: 32px; left: 50%; transform: translateX(-50%);
+    color: #FFD700; font-size: 10px; font-weight: 900; letter-spacing: 2px; white-space: nowrap;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .shelter-door {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 34px; height: 50px;
+    background: #1a1a2e; border-radius: 17px 17px 0 0;
+    border: 3px solid #37474F;
+  }
+  .shelter-door::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 8px; height: 8px;
+    background: #FFD700; border-radius: 50%;
+    box-shadow: 0 0 6px #FFD700;
+  }
+  #shelter-label {
+    margin-top: 6px; background: rgba(0,0,0,0.75); color: #FFD700;
+    padding: 5px 16px; border-radius: 12px;
+    font-size: 14px; font-weight: 900; letter-spacing: 1px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    animation: label-pulse 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes label-pulse {
+    from { opacity: 0.8; }
+    to   { opacity: 1; transform: scale(1.04); }
+  }
+
+  .pig-happiness { font-size: 13px; letter-spacing: 1px; margin-bottom: 6px; }
+  .pig-care-btns { display: flex; gap: 6px; margin-top: 8px; }
+  .pig-care-btn {
+    flex: 1; padding: 8px 4px; border: none; border-radius: 12px;
+    font-size: 18px; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+  }
+  .pig-care-btn:hover:not(:disabled) { transform: scale(1.15); }
+  .pig-care-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pig-care-btn.feed { background: #e8f5e9; }
+  .pig-care-btn.pet  { background: #fce4ec; }
+  .pig-care-btn.walk { background: #e3f2fd; }
+  .floating-heart {
+    position: absolute; pointer-events: none;
+    font-size: 22px; z-index: 200;
+    animation: heart-float 1.4s ease-out forwards;
+  }
+  @keyframes heart-float {
+    0%   { opacity: 1; transform: translateY(0) scale(0.8); }
+    100% { opacity: 0; transform: translateY(-70px) scale(1.2); }
+  }
+  .floating-walk {
+    position: absolute; pointer-events: none;
+    font-size: 20px; z-index: 200; bottom: 12px; left: 10%;
+    animation: walk-across 1.2s ease-in-out forwards;
+  }
+  @keyframes walk-across {
+    0%   { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(160px); }
+  }
 </style>
 </head>
 <body>
@@ -548,12 +913,42 @@
 </div>
 <div id="message"></div>
 
+<!-- ========= DISASTER WARNING (fixed, all screens) ========= -->
+<div id="disaster-warning">
+  <div class="disaster-warn-box">
+    <div class="dw-icon" id="dw-icon">🌪️</div>
+    <div class="dw-name" id="dw-name">TORNADO WARNING!</div>
+    <div class="dw-sub">⚠️ Get ALL pigs to the barn! ⚠️</div>
+    <div class="dw-count" id="dw-count">30</div>
+  </div>
+</div>
+
+<!-- ========= DISASTER STRIKE OVERLAY ========= -->
+<div id="disaster-overlay">
+  <div class="ds-icon"   id="ds-icon">🌪️</div>
+  <div class="ds-title"  id="ds-title">TORNADO STRIKES!</div>
+  <div class="ds-damage" id="ds-damage"></div>
+  <button class="ds-ok-btn" id="disaster-ok">OK, rebuild...</button>
+</div>
+
 <!-- ========= YARD SCREEN ========= -->
 <div class="screen active" id="yard">
   <div class="sun"><div class="sun-ray"></div></div>
   <div id="yard-piggies"></div>
+  <!-- Tornado shelter (only visible during disaster warning) -->
+  <div id="shelter-btn">
+    <div class="shelter-dome">
+      <div class="shelter-stripe"></div>
+      <div class="shelter-sign">SHELTER</div>
+      <div class="shelter-door"></div>
+    </div>
+    <div id="shelter-label">🚨 Take Shelter!</div>
+  </div>
+  <div id="barn-btn">🐄</div>
+  <div id="barn-hud-label">🐷 Barn</div>
   <div id="house-btn">🏠</div>
   <div id="house-label">Kitchen</div>
+  <button id="test-disaster-btn" onclick="if(disasterState==='idle'){triggerDisasterWarning(disasters[Math.floor(Math.random()*disasters.length)]);}" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:500;background:#c00;color:white;font-size:16px;font-weight:900;padding:10px 24px;border:none;border-radius:50px;cursor:pointer;opacity:0.75;letter-spacing:1px;">⚡ Disaster</button>
   <div id="piggy-hint">Chase the piggies! Click one to catch it, then bring it to the kitchen!</div>
 </div>
 
@@ -565,9 +960,11 @@
   <div id="cook-label">Click the pan to cook!</div>
   <div class="kitchen-register">🧾</div>
   <div class="customer-table" id="customer-table"></div>
-  <button class="kitchen-btn" id="sell-btn" disabled>Sell Bacon</button>
-  <button class="kitchen-btn" id="back-to-yard">Back Outside</button>
-  <button class="kitchen-btn" id="go-shop">Shop 🛒</button>
+  <div class="kitchen-btn-row">
+    <button class="kitchen-btn" id="back-to-yard">Back Outside</button>
+    <button class="kitchen-btn" id="sell-btn" disabled>Sell Bacon</button>
+    <button class="kitchen-btn" id="go-shop">Shop 🛒</button>
+  </div>
 </div>
 
 <!-- ========= SHOP SCREEN ========= -->
@@ -587,6 +984,14 @@
   <button class="shop-back" id="shop-back">Back to Kitchen</button>
 </div>
 
+<!-- ========= BARN SCREEN ========= -->
+<div class="screen" id="barn">
+  <div class="barn-screen-header">🐷 My Barn</div>
+  <div id="barn-list"></div>
+  <div id="barn-empty" class="barn-empty-msg">No piggies yet! Catch some and send them here! 🌾</div>
+  <button class="barn-back-btn" id="barn-back">← Back Outside</button>
+</div>
+
 <script>
 // ========= SOUNDS =========
 // AudioContext MUST be created inside a user gesture (click/touch) or browsers block it.
@@ -598,7 +1003,6 @@ function initSound() {
   if (soundReady) return;
   try {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // Play a tiny silent sound to fully unlock audio
     const buf = audioCtx.createBuffer(1, 1, 22050);
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
@@ -637,40 +1041,21 @@ function playSizzle() {
   } catch(e) {}
 }
 
+const oinkFiles = ['pig-squeal-short-low.mp3', 'pig-squeal2-low.mp3', 'pig-squeal3-low.mp3'];
+
 function playOink() {
-  if (!soundReady) return;
-  try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
-    osc.frequency.exponentialRampToValueAtTime(150 + Math.random() * 50, now + 0.15);
-    osc.frequency.exponentialRampToValueAtTime(400 + Math.random() * 100, now + 0.2);
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.setValueAtTime(0.4, now + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.25);
-  } catch(e) {}
+  const snd = new Audio(oinkFiles[Math.floor(Math.random() * oinkFiles.length)]);
+  snd.volume = 0.25;
+  snd.play().catch(() => {});
 }
 
 function playScaredOink() {
   playOink();
-  setTimeout(() => playOink(), 150);
+  setTimeout(() => playOink(), 300);
 }
 
-function pigSays(text) {
-  if ('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.pitch = 2;
-    utter.rate = 1.2;
-    utter.volume = 1.0;
-    speechSynthesis.speak(utter);
-  }
+function pigSays() {
+  playScaredOink();
 }
 
 const pigPhrases = [
@@ -690,6 +1075,232 @@ let currentScreen = 'yard';
 let yardPiggies = [];      // array of piggy objects
 let pickedUpPiggies = [];  // all the piggies we're carrying
 let piggiesInKitchen = 0;  // how many piggies are ready to cook
+
+// ========= BARN STATE =========
+const barnPigNames = ['Hamlet','Wilbur','Peppa','Rosie','Pinky',
+  'Waffles','Cupcake','Nugget','Truffle','Peanut',
+  'Biscuit','Pudding','Butterscotch','Snuggles','Napoleon'];
+let barnPiggies = JSON.parse(localStorage.getItem('barnPiggies') || '[]');
+let barnRefreshCounter = 0;
+
+function saveBarnPiggies() {
+  localStorage.setItem('barnPiggies', JSON.stringify(barnPiggies));
+}
+function randomPigName() {
+  return barnPigNames[Math.floor(Math.random() * barnPigNames.length)];
+}
+function getAge(pig) {
+  return Math.min(100, (Date.now() - pig.birthTime) / 1000 / 3600);
+}
+function adoptToBarn(pig) {
+  const now = Date.now();
+  barnPiggies.push({
+    id: now + Math.random(),
+    name: randomPigName(),
+    birthTime: now,
+    lastFed: now,
+    lastPetted: now,
+    lastWalked: now,
+    skinId: currentPigSkin.id,
+    skinColor: currentPigSkin.color,
+    skinNose: currentPigSkin.nose,
+    skinNostril: currentPigSkin.nostril,
+    skinEar: currentPigSkin.ear,
+  });
+  saveBarnPiggies();
+}
+function renderBarnPiggies() {
+  const list = document.getElementById('barn-list');
+  const emptyMsg = document.getElementById('barn-empty');
+  if (barnPiggies.length === 0) {
+    list.innerHTML = '';
+    emptyMsg.style.display = '';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  list.innerHTML = '';
+  barnPiggies.forEach(pig => list.appendChild(createPigCard(pig)));
+}
+function createPigCard(pig) {
+  const age = getAge(pig);
+  const isReady = age >= 100;
+  const isHungry = (Date.now() - pig.lastFed) / 3600000 >= 2;
+  const happiness = getHappiness(pig);
+  let barColor = age >= 85 ? '#e53935' : age >= 60 ? '#FF9800' : '#4CAF50';
+  let statusHtml = isReady
+    ? '<span class="ready-badge">Ready to Cook! 🔥</span>'
+    : isHungry ? '🍽️ Hungry!' : '&nbsp;';
+  const card = document.createElement('div');
+  card.className = 'pig-card' + (isReady ? ' ready' : '');
+  card.dataset.pigId = pig.id;
+  const rainbowClass = pig.skinId === 'rainbow' ? ' rainbow-skin' : '';
+  card.innerHTML = `
+    <div class="pig-card-pig${rainbowClass}" style="--pig-color:${pig.skinColor};--pig-nose:${pig.skinNose};--pig-nostril:${pig.skinNostril};--pig-ear:${pig.skinEar};">${createPigHTML()}</div>
+    <div class="pig-card-name">${pig.name} ${getHappinessEmoji(happiness)}</div>
+    <div class="pig-happiness">${getHappinessHearts(happiness)}</div>
+    <div class="pig-card-age">${Math.floor(age)} / 100 hours</div>
+    <div class="age-bar-wrap"><div class="age-bar" style="width:${age}%;background:${barColor};"></div></div>
+    <div class="pig-card-status">${statusHtml}</div>
+  `;
+  if (isReady) {
+    const btn = document.createElement('button');
+    btn.className = 'pig-card-cook-btn';
+    btn.textContent = 'Cook Now 🍳';
+    btn.addEventListener('click', () => cookBarnPig(pig.id));
+    card.appendChild(btn);
+  } else {
+    const row = document.createElement('div');
+    row.className = 'pig-care-btns';
+    const feedBtn = document.createElement('button');
+    feedBtn.className = 'pig-care-btn feed';
+    feedBtn.title = 'Feed'; feedBtn.textContent = '🌽';
+    feedBtn.addEventListener('click', () => feedBarnPig(pig.id, feedBtn));
+    const petBtn = document.createElement('button');
+    petBtn.className = 'pig-care-btn pet';
+    petBtn.title = 'Pet'; petBtn.textContent = '💕';
+    petBtn.addEventListener('click', () => petPig(pig.id, petBtn));
+    const walkBtn = document.createElement('button');
+    walkBtn.className = 'pig-care-btn walk';
+    walkBtn.title = 'Walk'; walkBtn.textContent = '🦮';
+    walkBtn.addEventListener('click', () => walkPig(pig.id, walkBtn));
+    row.appendChild(feedBtn);
+    row.appendChild(petBtn);
+    row.appendChild(walkBtn);
+    card.appendChild(row);
+  }
+  return card;
+}
+function feedBarnPig(id, btn) {
+  const pig = barnPiggies.find(p => String(p.id) === String(id));
+  if (!pig) return;
+  pig.lastFed = Date.now();
+  saveBarnPiggies();
+  if (btn) {
+    btn.textContent = 'Fed! 🐷';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = '🌽 Feed'; btn.disabled = false; }, 1500);
+  }
+}
+function cookBarnPig(id) {
+  const idx = barnPiggies.findIndex(p => String(p.id) === String(id));
+  if (idx === -1) return;
+  const name = barnPiggies[idx].name;
+  barnPiggies.splice(idx, 1);
+  saveBarnPiggies();
+  piggiesInKitchen++;
+  showMessage(`Time to cook ${name}! 🍳`);
+  showScreen('kitchen');
+}
+function getHappiness(pig) {
+  const now = Date.now();
+  const hrsPetted  = (now - (pig.lastPetted  || pig.birthTime)) / 3600000;
+  const hrsWalked  = (now - (pig.lastWalked  || pig.birthTime)) / 3600000;
+  const hrsFed     = (now - pig.lastFed) / 3600000;
+  let h = 100;
+  h -= Math.min(50, hrsPetted * 8);
+  h -= Math.min(30, hrsWalked * 5);
+  h -= Math.min(20, hrsFed * 10);
+  return Math.max(0, Math.round(h));
+}
+function getHappinessHearts(h) {
+  const n = Math.round(h / 20);
+  return '❤️'.repeat(n) + '🖤'.repeat(5 - n);
+}
+function getHappinessEmoji(h) {
+  if (h >= 80) return '😍';
+  if (h >= 60) return '😊';
+  if (h >= 40) return '😐';
+  if (h >= 20) return '😕';
+  return '😢';
+}
+function showFloatingHearts(cardEl) {
+  const emojis = ['❤️','💕','💖','💗','💓'];
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'floating-heart';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = (15 + Math.random() * 60) + '%';
+      el.style.top = (20 + Math.random() * 30) + '%';
+      cardEl.appendChild(el);
+      setTimeout(() => el.remove(), 1400);
+    }, i * 180);
+  }
+}
+function showWalkAnimation(cardEl) {
+  const el = document.createElement('div');
+  el.className = 'floating-walk';
+  el.textContent = '🐷💨';
+  cardEl.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+function petPig(id, btn) {
+  const pig = barnPiggies.find(p => String(p.id) === String(id));
+  if (!pig) return;
+  const cooldown = 30 * 60 * 1000;
+  const wait = cooldown - (Date.now() - (pig.lastPetted || 0));
+  if (wait > 0) {
+    showMessage(`Wait ${Math.ceil(wait / 60000)} more min to pet ${pig.name}!`);
+    return;
+  }
+  pig.lastPetted = Date.now();
+  saveBarnPiggies();
+  const card = document.querySelector(`[data-pig-id="${id}"]`);
+  if (card) showFloatingHearts(card);
+  if (btn) { btn.textContent = '💕'; btn.disabled = true; setTimeout(() => { btn.textContent = '💕'; btn.disabled = false; }, 2000); }
+  showMessage(`${pig.name} loves the attention! 💕`);
+}
+function walkPig(id, btn) {
+  const pig = barnPiggies.find(p => String(p.id) === String(id));
+  if (!pig) return;
+  const cooldown = 60 * 60 * 1000;
+  const wait = cooldown - (Date.now() - (pig.lastWalked || 0));
+  if (wait > 0) {
+    showMessage(`Wait ${Math.ceil(wait / 60000)} more min to walk ${pig.name}!`);
+    return;
+  }
+  pig.lastWalked = Date.now();
+  saveBarnPiggies();
+  const card = document.querySelector(`[data-pig-id="${id}"]`);
+  if (card) showWalkAnimation(card);
+  if (btn) { btn.textContent = '🦮'; btn.disabled = true; setTimeout(() => { btn.textContent = '🦮'; btn.disabled = false; }, 2000); }
+  showMessage(`${pig.name} is going for a walk! 🦮`);
+}
+function refreshBarnCards() {
+  barnPiggies.forEach(pig => {
+    const card = document.querySelector(`[data-pig-id="${pig.id}"]`);
+    if (!card) return;
+    const age = getAge(pig);
+    const isReady = age >= 100;
+    const isHungry = (Date.now() - pig.lastFed) / 3600000 >= 2;
+    const happiness = getHappiness(pig);
+    const barColor = age >= 85 ? '#e53935' : age >= 60 ? '#FF9800' : '#4CAF50';
+    const bar = card.querySelector('.age-bar');
+    if (bar) { bar.style.width = age + '%'; bar.style.background = barColor; }
+    const ageText = card.querySelector('.pig-card-age');
+    if (ageText) ageText.textContent = Math.floor(age) + ' / 100 hours';
+    const hearts = card.querySelector('.pig-happiness');
+    if (hearts) hearts.textContent = getHappinessHearts(happiness);
+    const nameEl = card.querySelector('.pig-card-name');
+    if (nameEl) nameEl.textContent = pig.name + ' ' + getHappinessEmoji(happiness);
+    const status = card.querySelector('.pig-card-status');
+    if (status) {
+      status.innerHTML = isReady
+        ? '<span class="ready-badge">Ready to Cook! 🔥</span>'
+        : isHungry ? '🍽️ Hungry!' : '&nbsp;';
+    }
+    card.className = 'pig-card' + (isReady ? ' ready' : '');
+    if (isReady && !card.querySelector('.pig-card-cook-btn')) {
+      const careRow = card.querySelector('.pig-care-btns');
+      if (careRow) careRow.remove();
+      const cookBtn = document.createElement('button');
+      cookBtn.className = 'pig-card-cook-btn';
+      cookBtn.textContent = 'Cook Now 🍳';
+      cookBtn.addEventListener('click', () => cookBarnPig(pig.id));
+      card.appendChild(cookBtn);
+    }
+  });
+}
 
 function createPigHTML() {
   return `
@@ -721,6 +1332,11 @@ function applyPigSkinToElement(el) {
   el.style.setProperty('--pig-nose', currentPigSkin.nose);
   el.style.setProperty('--pig-nostril', currentPigSkin.nostril);
   el.style.setProperty('--pig-ear', currentPigSkin.ear);
+  if (currentPigSkin.id === 'rainbow') {
+    el.classList.add('rainbow-skin');
+  } else {
+    el.classList.remove('rainbow-skin');
+  }
 }
 
 function spawnYardPiggies(count) {
@@ -743,6 +1359,7 @@ function spawnYardPiggies(count) {
       eatingTimer: 0, isEating: false,
       moving: false,
       oinkTimer: 60 + Math.random() * 200,
+      winkTimer: 180 + Math.random() * 400,
     });
   }
 }
@@ -755,6 +1372,12 @@ const pigSkins = [
   { id: 'blue', name: 'Blue Pig', color: '#90caf9', nose: '#42a5f5', nostril: '#1e88e5', ear: '#64b5f6', price: 30 },
   { id: 'mint', name: 'Mint Pig', color: '#a5d6a7', nose: '#66bb6a', nostril: '#43a047', ear: '#81c784', price: 40 },
   { id: 'red', name: 'Fire Pig', color: '#ef9a9a', nose: '#e53935', nostril: '#c62828', ear: '#ef5350', price: 50 },
+  { id: 'black', name: 'Midnight Pig', color: '#616161', nose: '#424242', nostril: '#212121', ear: '#757575', price: 60 },
+  { id: 'rainbow', name: 'Rainbow Pig', color: '#ffb3ba', nose: '#ff9aa2', nostril: '#ff6b6b', ear: '#ffd1dc', price: 75 },
+  { id: 'sky', name: 'Sky Pig', color: '#b3e5fc', nose: '#4fc3f7', nostril: '#0288d1', ear: '#81d4fa', price: 45 },
+  { id: 'peach', name: 'Peachy Pig', color: '#ffccb6', nose: '#ffa07a', nostril: '#e8724a', ear: '#ffb89a', price: 35 },
+  { id: 'lilac', name: 'Lilac Pig', color: '#e8d5f5', nose: '#c39bd3', nostril: '#9b59b6', ear: '#d7bde2', price: 40 },
+  { id: 'coral', name: 'Coral Pig', color: '#ff8a80', nose: '#ff5252', nostril: '#d50000', ear: '#ff6e6e', price: 55 },
 ];
 
 const panSkins = [
@@ -763,6 +1386,11 @@ const panSkins = [
   { id: 'pot', name: 'Magic Pot', emoji: '🍲', price: 25 },
   { id: 'fire', name: 'Fire Grill', emoji: '🔥', price: 35 },
   { id: 'sparkle', name: 'Sparkle Pan', emoji: '✨', price: 50 },
+  { id: 'taco', name: 'Taco Shell', emoji: '🌮', price: 30 },
+  { id: 'pizza', name: 'Pizza Oven', emoji: '🍕', price: 40 },
+  { id: 'bento', name: 'Bento Box', emoji: '🍱', price: 45 },
+  { id: 'bbq', name: 'BBQ Grill', emoji: '🍖', price: 55 },
+  { id: 'rainbow_pan', name: 'Rainbow Pan', emoji: '🌈', price: 70 },
 ];
 
 let currentPigSkin = pigSkins[0];
@@ -793,6 +1421,8 @@ function showScreen(name) {
       pickedUpPiggies = [];
     }
     spawnCustomers();
+  } else if (name === 'barn') {
+    renderBarnPiggies();
   }
   updateCookLabel();
 }
@@ -835,17 +1465,10 @@ document.getElementById('yard').addEventListener('click', (e) => {
     pigSays(pigPhrases[Math.floor(Math.random() * pigPhrases.length)]);
     const count = pickedUpPiggies.length;
     showMessage(count === 1 ? 'Piggy picked up! Catch more or go to the kitchen!' : count + ' piggies! Go to the kitchen!');
-    // Oink for 10 seconds
-    let oinkCount = 0;
-    const oinkLoop = setInterval(() => {
-      oinkCount++;
-      playOink();
-      if (oinkCount >= 20) clearInterval(oinkLoop);
-    }, 500);
   }
 });
 
-// House button
+// House button (send to kitchen)
 document.getElementById('house-btn').addEventListener('click', () => {
   if (pickedUpPiggies.length === 0) {
     showMessage('Catch a piggy first!');
@@ -856,6 +1479,23 @@ document.getElementById('house-btn').addEventListener('click', () => {
 document.getElementById('house-label').addEventListener('click', () => {
   document.getElementById('house-btn').click();
 });
+
+// Barn button — send pigs to barn if holding any, otherwise open barn
+document.getElementById('barn-btn').addEventListener('click', () => {
+  if (pickedUpPiggies.length > 0) {
+    pickedUpPiggies.forEach(pig => adoptToBarn(pig));
+    const count = pickedUpPiggies.length;
+    pickedUpPiggies = [];
+    showMessage(count === 1 ? 'Piggy moved to the barn! 🐷' : count + ' piggies moved to the barn! 🐷');
+  }
+  showScreen('barn');
+});
+document.getElementById('barn-hud-label').addEventListener('click', () => {
+  document.getElementById('barn-btn').click();
+});
+
+// Barn back button
+document.getElementById('barn-back').addEventListener('click', () => showScreen('yard'));
 
 // ========= KITCHEN =========
 function updateCookLabel() {
@@ -971,13 +1611,6 @@ function serveBacon(customerEl) {
   speech.textContent = phrase;
   speech.classList.add('show');
 
-  if ('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(phrase);
-    utter.pitch = 0.8 + Math.random() * 0.8;
-    utter.rate = 1.0;
-    utter.volume = 0.7;
-    speechSynthesis.speak(utter);
-  }
 
   const rect = customerEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -1181,8 +1814,19 @@ function animate() {
       // Random idle oinks
       pig.oinkTimer--;
       if (pig.oinkTimer <= 0 && !isHeld) {
-        if (Math.random() < 0.3) playOink();
-        pig.oinkTimer = 120 + Math.random() * 300;
+        if (Math.random() < 0.1) playOink();
+        pig.oinkTimer = 300 + Math.random() * 600;
+      }
+
+      // Random winks
+      pig.winkTimer--;
+      if (pig.winkTimer <= 0 && !isHeld) {
+        const eye = pig.el.querySelector('.pig-eye.right-eye');
+        if (eye) {
+          eye.classList.add('winking');
+          setTimeout(() => eye.classList.remove('winking'), 180);
+        }
+        pig.winkTimer = 300 + Math.random() * 500;
       }
 
       if (isHeld) {
@@ -1195,19 +1839,22 @@ function animate() {
         pig.y += (targetY - pig.y) * 0.15;
         pig.isEating = false;
       } else {
-        const scareRadius = 180;
+        const isPanicking = disasterState === 'warning';
+        const scareRadius = isPanicking ? 400 : 180;
 
         if (dist < scareRadius) {
           pig.isEating = false;
-          if (Math.random() < 0.02) playOink();
+          if (Math.random() < (isPanicking ? 0.08 : 0.02)) playOink();
           const push = (scareRadius - dist) / scareRadius;
-          pig.vx -= (dx / dist) * push * 0.25;
-          pig.vy -= (dy / dist) * push * 0.25;
+          const pushStr = isPanicking ? 0.6 : 0.25;
+          pig.vx -= (dx / dist) * push * pushStr;
+          pig.vy -= (dy / dist) * push * pushStr;
         } else {
           pig.wanderTimer--;
           pig.eatingTimer--;
 
-          if (pig.eatingTimer <= 0 && !pig.isEating && Math.random() < 0.008) {
+          // No eating during panic
+          if (!isPanicking && pig.eatingTimer <= 0 && !pig.isEating && Math.random() < 0.008) {
             pig.isEating = true;
             pig.eatingTimer = 80 + Math.random() * 120;
             pig.vx = 0;
@@ -1219,18 +1866,20 @@ function animate() {
             if (pig.eatingTimer <= 0) pig.isEating = false;
           } else if (pig.wanderTimer <= 0) {
             const angle = Math.random() * Math.PI * 2;
-            pig.wanderDirX = Math.cos(angle) * 0.3;
-            pig.wanderDirY = Math.sin(angle) * 0.3;
-            pig.wanderTimer = 60 + Math.random() * 120;
+            const speed = isPanicking ? 1.2 : 0.3;
+            pig.wanderDirX = Math.cos(angle) * speed;
+            pig.wanderDirY = Math.sin(angle) * speed;
+            pig.wanderTimer = isPanicking ? (10 + Math.random() * 20) : (60 + Math.random() * 120);
           }
 
           if (!pig.isEating) {
-            pig.vx += pig.wanderDirX * 0.05;
-            pig.vy += pig.wanderDirY * 0.05;
+            const acc = isPanicking ? 0.18 : 0.05;
+            pig.vx += pig.wanderDirX * acc;
+            pig.vy += pig.wanderDirY * acc;
           }
         }
 
-        pig.vx *= 0.95;
+        pig.vx *= isPanicking ? 0.92 : 0.95;
         pig.vy *= 0.95;
         pig.x += pig.vx;
         pig.y += pig.vy;
@@ -1259,13 +1908,268 @@ function animate() {
       pig.el.style.transform = `translate(${pig.x - 40}px, ${pig.y - 35}px) scaleX(${scaleX})`;
     }
   }
+  barnRefreshCounter++;
+  if (currentScreen === 'barn' && barnRefreshCounter >= 60) {
+    barnRefreshCounter = 0;
+    refreshBarnCards();
+  }
   requestAnimationFrame(animate);
 }
+
+// ========= DISASTER SYSTEM =========
+const disasters = [
+  { id: 'tornado',    name: 'TORNADO',    emoji: '🌪️', bg: 'linear-gradient(180deg,#1a1a1a,#3a3a2a)', penalty: 25 },
+  { id: 'hurricane',  name: 'HURRICANE',  emoji: '🌀', bg: 'linear-gradient(180deg,#0a1a4a,#0a3080)', penalty: 30 },
+  { id: 'earthquake', name: 'EARTHQUAKE', emoji: '🌋', bg: 'linear-gradient(180deg,#2a1000,#7a3010)', penalty: 20 },
+];
+
+let disasterState = 'idle'; // 'idle' | 'warning' | 'striking'
+let currentDisaster = null;
+let disasterCountdown = 30;
+let disasterInterval = null;
+let disasterScheduleTimer = null;
+let pigsInShelter = 0;
+
+function scheduleNextDisaster() {
+  clearTimeout(disasterScheduleTimer);
+  const delay = 20 * 1000; // exactly 20 sec
+  disasterScheduleTimer = setTimeout(() => {
+    if (disasterState === 'idle') {
+      triggerDisasterWarning(disasters[Math.floor(Math.random() * disasters.length)]);
+    } else {
+      scheduleNextDisaster();
+    }
+  }, delay);
+}
+
+// ---- Disaster visual effect state ----
+let disasterVisualRAF = null;
+let debrisInterval    = null;
+
+function startDisasterVisuals(disaster) {
+  clearDisasterVisuals();
+  const yard = document.getElementById('yard');
+
+  if (disaster.id === 'tornado') {
+    yard.classList.add('sky-tornado');
+
+    // Funnel cloud dropped into yard
+    const funnel = document.createElement('div');
+    funnel.id = 'd-funnel';
+    funnel.innerHTML = '<div class="funnel-cloud"></div><div class="funnel-stem"></div>';
+    yard.appendChild(funnel);
+
+    // Sweep funnel left-right
+    let tx = 50, tDir = 1;
+    const animFunnel = () => {
+      if (disasterState !== 'warning') return;
+      tx += tDir * 0.4;
+      if (tx > 75) tDir = -1;
+      if (tx < 15) tDir = 1;
+      funnel.style.left = tx + '%';
+      disasterVisualRAF = requestAnimationFrame(animFunnel);
+    };
+    animFunnel();
+
+    // Debris
+    const debrisEmoji = ['🍃','🪵','📦','🧱','🪑','🌿','🛖'];
+    debrisInterval = setInterval(() => {
+      if (disasterState !== 'warning') return;
+      const d = document.createElement('div');
+      d.textContent = debrisEmoji[Math.floor(Math.random() * debrisEmoji.length)];
+      d.style.cssText = `position:absolute;font-size:${24+Math.random()*24}px;left:${Math.random()*90}%;top:${10+Math.random()*70}%;z-index:65;pointer-events:none;transition:transform 1s linear,opacity 1s linear;`;
+      yard.appendChild(d);
+      requestAnimationFrame(() => {
+        d.style.transform = `translate(${(Math.random()-0.5)*400}px,${(Math.random()-0.5)*300}px) rotate(${Math.random()*720}deg)`;
+        d.style.opacity = '0';
+      });
+      setTimeout(() => d.remove(), 1100);
+    }, 160);
+
+  } else if (disaster.id === 'hurricane') {
+    yard.classList.add('sky-hurricane');
+
+    // Hurricane icon
+    const icon = document.createElement('div');
+    icon.id = 'd-hurricane-icon';
+    icon.textContent = '🌀';
+    yard.appendChild(icon);
+
+    // Rain canvas inside yard
+    const canvas = document.createElement('canvas');
+    canvas.id = 'd-rain';
+    canvas.width  = yard.offsetWidth  || window.innerWidth;
+    canvas.height = yard.offsetHeight || window.innerHeight;
+    yard.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const drops = Array.from({length: 300}, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      speed: 14 + Math.random() * 12,
+      len: 22 + Math.random() * 26,
+    }));
+    const drawRain = () => {
+      if (disasterState !== 'warning') { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'rgba(160,210,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      drops.forEach(drop => {
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x + drop.len * 0.45, drop.y + drop.len);
+        drop.x += drop.speed * 0.45;
+        drop.y += drop.speed;
+        if (drop.y > canvas.height) { drop.y = -30; drop.x = Math.random() * canvas.width; }
+        if (drop.x > canvas.width)  { drop.x = 0; }
+      });
+      ctx.stroke();
+      disasterVisualRAF = requestAnimationFrame(drawRain);
+    };
+    drawRain();
+
+  } else {
+    // Earthquake
+    yard.classList.add('sky-earthquake', 'quake-rumble');
+
+    // Ground cracks
+    for (let i = 0; i < 7; i++) {
+      const crack = document.createElement('div');
+      crack.className = 'd-crack';
+      crack.style.cssText = `bottom:${5+Math.random()*30}%;left:${Math.random()*70}%;width:${100+Math.random()*180}px;transform:rotate(${(Math.random()-0.5)*22}deg);animation-delay:${i*0.15}s;`;
+      yard.appendChild(crack);
+    }
+
+    // Recurring dust puffs
+    debrisInterval = setInterval(() => {
+      if (disasterState !== 'warning') return;
+      const dust = document.createElement('div');
+      dust.className = 'd-dust';
+      dust.style.cssText = `bottom:${5+Math.random()*35}%;left:${5+Math.random()*88}%;`;
+      yard.appendChild(dust);
+      setTimeout(() => dust.remove(), 1600);
+    }, 500);
+  }
+}
+
+function clearDisasterVisuals() {
+  if (disasterVisualRAF) { cancelAnimationFrame(disasterVisualRAF); disasterVisualRAF = null; }
+  if (debrisInterval)    { clearInterval(debrisInterval); debrisInterval = null; }
+  const yard = document.getElementById('yard');
+  yard.classList.remove('sky-tornado','sky-hurricane','sky-earthquake','quake-rumble');
+  ['d-funnel','d-hurricane-icon','d-rain'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+  yard.querySelectorAll('.d-crack,.d-dust').forEach(el => el.remove());
+}
+
+function triggerDisasterWarning(disaster) {
+  clearInterval(disasterInterval); // guard against double-calls
+  currentDisaster = disaster;
+  disasterState = 'warning';
+  disasterCountdown = 30;
+
+  document.getElementById('dw-icon').textContent  = disaster.emoji;
+  document.getElementById('dw-name').textContent  = '⚠️ ' + disaster.name + ' WARNING!';
+  document.getElementById('dw-count').textContent = disasterCountdown;
+  document.getElementById('dw-count').className   = 'dw-count';
+  document.getElementById('disaster-warning').classList.add('active');
+  document.getElementById('yard').classList.add('disaster-mode');
+  document.getElementById('shelter-btn').classList.add('visible');
+  pigsInShelter = 0;
+
+  startDisasterVisuals(disaster);
+
+  showMessage('⚠️ ' + disaster.name + ' COMING! Get pigs to the SHELTER!');
+
+  disasterInterval = setInterval(() => {
+    disasterCountdown--;
+    const el = document.getElementById('dw-count');
+    el.textContent = disasterCountdown;
+    el.className = 'dw-count' + (disasterCountdown <= 10 ? ' urgent' : '');
+    if (disasterCountdown <= 0) {
+      clearInterval(disasterInterval);
+      strikeDisaster();
+    }
+  }, 1000);
+}
+
+function strikeDisaster() {
+  disasterState = 'striking';
+  clearDisasterVisuals();
+  document.getElementById('disaster-warning').classList.remove('active');
+  document.getElementById('yard').classList.remove('disaster-mode');
+  document.getElementById('shelter-btn').classList.remove('visible');
+
+  // Count losses — any pig still in the yard
+  const lostCount = yardPiggies.length;
+  const penalty   = lostCount * currentDisaster.penalty;
+  if (penalty > 0) { money -= penalty; updateHUD(); }
+
+  // Wipe the yard
+  yardPiggies = [];
+  pickedUpPiggies = [];
+  document.getElementById('yard-piggies').innerHTML = '';
+
+  // Build damage report
+  let msg = '';
+  if (lostCount === 0) {
+    msg = '✅ All pigs made it to the shelter!\nNo money lost! 🐷💚';
+    if (pigsInShelter > 0) msg += '\n' + pigsInShelter + ' pig' + (pigsInShelter > 1 ? 's' : '') + ' sheltered safely!';
+  } else {
+    if (pigsInShelter > 0) msg += pigsInShelter + ' pig' + (pigsInShelter > 1 ? 's' : '') + ' sheltered safely ✅\n';
+    msg += lostCount + ' pig' + (lostCount > 1 ? 's' : '') + ' lost to the ' + currentDisaster.name.toLowerCase() + '! 😱';
+    msg += '\n-$' + penalty + ' in damages!';
+    if (money < 0) msg += '\n💸 You\'re $' + Math.abs(money) + ' in debt!';
+  }
+
+  const overlay = document.getElementById('disaster-overlay');
+  overlay.style.background = currentDisaster.bg;
+  document.getElementById('ds-icon').textContent  = currentDisaster.emoji;
+  document.getElementById('ds-title').textContent = currentDisaster.emoji + ' ' + currentDisaster.name + ' STRUCK!';
+  document.getElementById('ds-damage').textContent = msg;
+  overlay.classList.add('active');
+
+  // Earthquake screen shake
+  if (currentDisaster.id === 'earthquake') {
+    document.body.classList.add('quake-shake');
+    setTimeout(() => document.body.classList.remove('quake-shake'), 2000);
+  }
+}
+
+document.getElementById('disaster-ok').addEventListener('click', () => {
+  document.getElementById('disaster-overlay').classList.remove('active');
+  clearDisasterVisuals();
+  disasterState = 'idle';
+  currentDisaster = null;
+  pigsInShelter = 0;
+  showScreen('yard');
+  scheduleNextDisaster();
+});
+
+// Shelter button — saves picked-up pigs during disaster warning
+document.getElementById('shelter-btn').addEventListener('click', () => {
+  if (disasterState !== 'warning') return;
+  if (pickedUpPiggies.length === 0) {
+    showMessage('Pick up pigs first, then run to the shelter!');
+    return;
+  }
+  const count = pickedUpPiggies.length;
+  pickedUpPiggies.forEach(pig => {
+    const idx = yardPiggies.indexOf(pig);
+    if (idx !== -1) yardPiggies.splice(idx, 1);
+    pig.el.remove();
+  });
+  pickedUpPiggies = [];
+  pigsInShelter += count;
+  showMessage(count === 1 ? '1 pig safe in the shelter! 🏗️' : count + ' pigs safe in the shelter! 🏗️');
+});
 
 // ========= START =========
 spawnYardPiggies(4);
 requestAnimationFrame(animate);
 updateHUD();
+scheduleNextDisaster(); // first disaster in 20 sec, then every 20 sec
 
 // Allow direct screen access via URL hash (for screenshots/testing)
 if (location.hash === '#kitchen') { showScreen('kitchen'); }
