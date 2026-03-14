@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧺 Piggy Catch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(180deg, #ffb3d1 0%, #ff85ad 60%, #c8e86a 60%, #a0d040 100%);
+    height: 100vh; overflow: hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    user-select: none;
+    cursor: none;
+  }
+  /* Repeating snout pattern in sky */
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; right: 0; height: 60%;
+    background-image:
+      radial-gradient(ellipse 22px 17px at 50% 50%, rgba(255,255,255,0.25) 60%, transparent 61%),
+      radial-gradient(circle 4px at 36% 40%, rgba(200,80,120,0.25) 100%),
+      radial-gradient(circle 4px at 64% 40%, rgba(200,80,120,0.25) 100%);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ========= HUD ========= */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.25);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    pointer-events: none;
+  }
+  .hud-box {
+    background: rgba(0,0,0,0.35);
+    border-radius: 14px;
+    padding: 8px 18px;
+    color: white;
+    font-weight: 900;
+    text-align: center;
+    pointer-events: auto;
+  }
+  .hud-label { font-size: 10px; opacity: 0.7; letter-spacing: 2px; text-transform: uppercase; }
+  .hud-value { font-size: 26px; line-height: 1.1; }
+
+  #home-btn {
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 14px;
+    padding: 8px 18px;
+    color: white;
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+    text-decoration: none;
+    pointer-events: auto;
+    transition: background 0.2s;
+  }
+  #home-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ========= GAME AREA ========= */
+  #game-area {
+    position: fixed;
+    inset: 64px 0 0 0;
+    overflow: hidden;
+  }
+
+  /* ========= BASKET ========= */
+  #basket {
+    position: absolute;
+    bottom: 60px;
+    font-size: 64px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 10;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    transition: left 0.04s linear;
+  }
+
+  /* ========= FALLING PIGGY ========= */
+  .falling-pig {
+    position: absolute;
+    font-size: 48px;
+    pointer-events: none;
+    z-index: 5;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+    animation: pig-wobble 0.5s ease-in-out infinite;
+  }
+  @keyframes pig-wobble {
+    0%, 100% { transform: rotate(-8deg); }
+    50% { transform: rotate(8deg); }
+  }
+
+  /* ========= CATCH FLASH ========= */
+  .catch-flash {
+    position: absolute;
+    font-size: 32px;
+    pointer-events: none;
+    z-index: 20;
+    animation: catch-pop 0.6s ease-out forwards;
+  }
+  @keyframes catch-pop {
+    0% { opacity: 1; transform: scale(0.5) translateY(0); }
+    60% { opacity: 1; transform: scale(1.3) translateY(-20px); }
+    100% { opacity: 0; transform: scale(1) translateY(-50px); }
+  }
+
+  /* ========= MISS INDICATOR ========= */
+  .miss-x {
+    position: absolute;
+    font-size: 40px;
+    pointer-events: none;
+    z-index: 20;
+    animation: miss-fall 0.7s ease-out forwards;
+  }
+  @keyframes miss-fall {
+    0% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.8) translateY(30px); }
+  }
+
+  /* ========= LIVES ========= */
+  #lives-display {
+    font-size: 24px;
+    letter-spacing: 4px;
+  }
+
+  /* ========= SCREENS ========= */
+  .overlay {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 200;
+    text-align: center;
+    padding: 20px;
+  }
+  #start-screen {
+    background: linear-gradient(135deg, #3a0a20, #6a1040);
+  }
+  #gameover-screen {
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    display: none;
+  }
+
+  .screen-emoji { font-size: 80px; margin-bottom: 16px; }
+  .screen-title {
+    font-size: 42px; font-weight: 900;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .screen-sub { font-size: 16px; color: #aaa; margin-bottom: 30px; line-height: 1.6; }
+  .screen-btn {
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    border: none; border-radius: 50px;
+    padding: 16px 40px;
+    color: white; font-size: 20px; font-weight: 900;
+    cursor: pointer; letter-spacing: 1px;
+    box-shadow: 0 6px 20px rgba(255,107,157,0.4);
+    transition: transform 0.15s;
+    margin: 6px;
+  }
+  .screen-btn:hover { transform: scale(1.06); }
+  .screen-btn.secondary {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+    font-size: 16px;
+  }
+  .final-score {
+    font-size: 64px; font-weight: 900;
+    color: #ffd32a;
+    text-shadow: 0 4px 20px rgba(255,211,42,0.5);
+    margin: 10px 0;
+  }
+  .final-label { font-size: 16px; color: #aaa; margin-bottom: 20px; }
+
+  /* ========= GRASS ========= */
+  #grass {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, #c8e86a, #a0d040);
+    pointer-events: none;
+  }
+
+  /* ========= CLOUDS ========= */
+  .cloud {
+    position: absolute;
+    font-size: 60px;
+    opacity: 0.7;
+    pointer-events: none;
+    animation: cloud-drift var(--spd, 20s) linear infinite;
+  }
+  @keyframes cloud-drift {
+    from { transform: translateX(-120px); }
+    to   { transform: translateX(calc(100vw + 120px)); }
+  }
+
+  /* ========= INSTRUCTIONS ========= */
+  .instructions {
+    display: flex; gap: 20px; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .instr-item {
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: white;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 160px;
+    text-align: center;
+  }
+  .instr-item .icon { font-size: 28px; display: block; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ========= HUD ========= -->
+<div id="hud">
+  <div class="hud-box">
+    <div class="hud-label">Score</div>
+    <div class="hud-value" id="score-display">0</div>
+  </div>
+  <a href="hub.html" id="home-btn">🏠 Home</a>
+  <div class="hud-box">
+    <div class="hud-label">Lives</div>
+    <div class="hud-value" id="lives-display">🐷🐷🐷</div>
+  </div>
+</div>
+
+<!-- ========= GAME AREA ========= -->
+<div id="game-area">
+  <div id="basket">🧺</div>
+  <div id="grass"></div>
+</div>
+
+<!-- ========= START SCREEN ========= -->
+<div class="overlay" id="start-screen">
+  <div class="screen-emoji">🧺</div>
+  <div class="screen-title">Piggy Catch!</div>
+  <div class="screen-sub">Piggies are falling from the sky!<br>Catch them in your basket!</div>
+  <div class="instructions">
+    <div class="instr-item"><span class="icon">🖱️</span>Move your mouse to move the basket</div>
+    <div class="instr-item"><span class="icon">⬅️➡️</span>Or use arrow keys</div>
+    <div class="instr-item"><span class="icon">🐷</span>Miss 3 piggies and it's game over!</div>
+  </div>
+  <button class="screen-btn" id="start-btn">▶ START!</button>
+  <a href="hub.html"><button class="screen-btn secondary">🏠 Hub</button></a>
+</div>
+
+<!-- ========= GAME OVER SCREEN ========= -->
+<div class="overlay" id="gameover-screen">
+  <div class="screen-emoji">😢</div>
+  <div class="screen-title">Game Over!</div>
+  <div class="final-score" id="final-score">0</div>
+  <div class="final-label">piggies caught!</div>
+  <div class="screen-sub" id="rank-text">Keep practicing!</div>
+  <button class="screen-btn" id="restart-btn">▶ Play Again</button>
+  <a href="hub.html"><button class="screen-btn secondary">🏠 Hub</button></a>
+</div>
+
+<script>
+const gameArea   = document.getElementById('game-area');
+const basket     = document.getElementById('basket');
+const scoreEl    = document.getElementById('score-display');
+const livesEl    = document.getElementById('lives-display');
+const startScreen  = document.getElementById('start-screen');
+const gameoverScreen = document.getElementById('gameover-screen');
+const finalScoreEl = document.getElementById('final-score');
+const rankText   = document.getElementById('rank-text');
+
+let score = 0;
+let lives = 3;
+let basketX = window.innerWidth / 2;
+let running = false;
+let pigs = [];
+let dropInterval = null;
+let speedMult = 1;
+let frameId = null;
+let arrowLeft = false;
+let arrowRight = false;
+
+// Pig types
+const PIG_EMOJIS = ['🐷', '🐖', '🐷', '🐷', '🐗'];
+
+// ---- BASKET MOVEMENT ----
+document.addEventListener('mousemove', e => {
+  if (!running) return;
+  // Adjust for game area top offset
+  basketX = e.clientX;
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  arrowLeft  = true;
+  if (e.key === 'ArrowRight') arrowRight = true;
+  if (e.key === ' ' && !running) startGame();
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft')  arrowLeft  = false;
+  if (e.key === 'ArrowRight') arrowRight = false;
+});
+
+function clampBasket() {
+  const half = 32;
+  basketX = Math.max(half, Math.min(window.innerWidth - half, basketX));
+}
+
+// ---- SPAWN PIG ----
+function spawnPig() {
+  const el = document.createElement('div');
+  el.className = 'falling-pig';
+  el.textContent = PIG_EMOJIS[Math.floor(Math.random() * PIG_EMOJIS.length)];
+  const x = 40 + Math.random() * (gameArea.clientWidth - 80);
+  el.style.left = x + 'px';
+  el.style.top = '-60px';
+  gameArea.appendChild(el);
+  pigs.push({ el, x, y: -60, speed: (2 + Math.random() * 2) * speedMult });
+}
+
+// ---- CLOUD SETUP ----
+function addCloud() {
+  const c = document.createElement('div');
+  c.className = 'cloud';
+  c.textContent = '☁️';
+  c.style.top = (10 + Math.random() * 30) + '%';
+  c.style.setProperty('--spd', (15 + Math.random() * 20) + 's');
+  c.style.animationDelay = -(Math.random() * 20) + 's';
+  gameArea.appendChild(c);
+}
+for (let i = 0; i < 4; i++) addCloud();
+
+// ---- GAME LOOP ----
+function gameLoop() {
+  if (!running) return;
+
+  // Arrow key movement
+  const arrowSpeed = 10;
+  if (arrowLeft)  basketX -= arrowSpeed;
+  if (arrowRight) basketX += arrowSpeed;
+  clampBasket();
+
+  basket.style.left = basketX + 'px';
+
+  const areaH = gameArea.clientHeight;
+  const basketBottom = areaH - 60 - 32; // top of basket area
+  const basketTop    = basketBottom - 30;
+
+  for (let i = pigs.length - 1; i >= 0; i--) {
+    const pig = pigs[i];
+    pig.y += pig.speed;
+    pig.el.style.top = pig.y + 'px';
+
+    // Check catch
+    const pigLeft  = pig.x - 24;
+    const pigRight = pig.x + 24;
+    const basketLeft  = basketX - 45;
+    const basketRight = basketX + 45;
+
+    if (pig.y + 48 >= basketTop && pig.y <= basketBottom + 10 &&
+        pigRight >= basketLeft && pigLeft <= basketRight) {
+      // CAUGHT!
+      score++;
+      scoreEl.textContent = score;
+      showCatch(pig.x, pig.y);
+      pig.el.remove();
+      pigs.splice(i, 1);
+
+      // Speed up every 5 caught
+      if (score % 5 === 0) speedMult = Math.min(3.5, speedMult + 0.2);
+      continue;
+    }
+
+    // Fell off bottom
+    if (pig.y > areaH - 50) {
+      lives--;
+      updateLives();
+      showMiss(pig.x, pig.y - 60);
+      pig.el.remove();
+      pigs.splice(i, 1);
+
+      if (lives <= 0) {
+        gameOver();
+        return;
+      }
+    }
+  }
+
+  frameId = requestAnimationFrame(gameLoop);
+}
+
+function updateLives() {
+  livesEl.textContent = '🐷'.repeat(Math.max(0, lives));
+  if (!livesEl.textContent) livesEl.textContent = '💀';
+}
+
+function showCatch(x, y) {
+  const el = document.createElement('div');
+  el.className = 'catch-flash';
+  el.textContent = '+1 ✨';
+  el.style.left = (x - 20) + 'px';
+  el.style.top  = y + 'px';
+  el.style.color = '#ffd32a';
+  el.style.fontWeight = '900';
+  gameArea.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+function showMiss(x, y) {
+  const el = document.createElement('div');
+  el.className = 'miss-x';
+  el.textContent = '❌';
+  el.style.left = x + 'px';
+  el.style.top  = Math.max(0, y) + 'px';
+  gameArea.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+function startGame() {
+  startScreen.style.display = 'none';
+  gameoverScreen.style.display = 'none';
+  score = 0;
+  lives = 3;
+  speedMult = 1;
+  pigs.forEach(p => p.el.remove());
+  pigs = [];
+  scoreEl.textContent = '0';
+  updateLives();
+  running = true;
+
+  // Drop pigs on interval
+  if (dropInterval) clearInterval(dropInterval);
+  dropInterval = setInterval(() => {
+    if (running) spawnPig();
+    // Increase spawn rate over time
+    const rate = Math.max(400, 1400 - score * 20);
+    clearInterval(dropInterval);
+    dropInterval = setInterval(() => { if (running) spawnPig(); }, rate);
+  }, 1200);
+
+  frameId = requestAnimationFrame(gameLoop);
+}
+
+function gameOver() {
+  running = false;
+  clearInterval(dropInterval);
+  cancelAnimationFrame(frameId);
+  pigs.forEach(p => p.el.remove());
+  pigs = [];
+
+  finalScoreEl.textContent = score;
+
+  let rank = 'Keep practicing! 🐣';
+  if (score >= 50) rank = 'MASTER CATCHER! 🏆🐷';
+  else if (score >= 30) rank = 'Amazing! You\'re a pro! 🌟';
+  else if (score >= 20) rank = 'Great job! 🎉';
+  else if (score >= 10) rank = 'Not bad! Try again! 💪';
+  rankText.textContent = rank;
+
+  gameoverScreen.style.display = 'flex';
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('restart-btn').addEventListener('click', startGame);
+</script>
+</body>
+</html>

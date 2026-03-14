@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐷 Piggy World 🐷</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #2d0a1a;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: white;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Pink piggy snout pattern background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse 36px 28px at 50% 50%, #f4a0b8 60%, transparent 61%),
+      radial-gradient(circle 7px at 36% 40%, #d06080 100%),
+      radial-gradient(circle 7px at 64% 40%, #d06080 100%);
+    background-size: 90px 90px;
+    background-position: 0 0;
+    opacity: 0.07;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ========= HEADER ========= */
+  .hub-header {
+    text-align: center;
+    padding: 30px 20px 20px;
+    position: relative;
+  }
+  .hub-title {
+    font-size: clamp(36px, 8vw, 72px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff6b9d, #ffb3c6, #ff9f43, #ffd32a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    text-shadow: none;
+    animation: title-pulse 3s ease-in-out infinite;
+  }
+  @keyframes title-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15); }
+  }
+  .hub-subtitle {
+    font-size: 16px;
+    color: #aaa;
+    margin-top: 6px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* Piggy snout overlay emojis (decorative) */
+  .snout-deco {
+    position: fixed;
+    font-size: 40px;
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+    animation: snout-float var(--sd, 6s) ease-in-out infinite;
+  }
+  @keyframes snout-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(8deg); }
+  }
+
+  /* Floating stars background */
+  .stars {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .star {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d, 3s) ease-in-out infinite;
+    opacity: 0;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.8; }
+  }
+
+  /* ========= SECTION LABELS ========= */
+  .section-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #777;
+    margin: 10px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+  }
+  .section-label::before,
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #333;
+  }
+
+  /* ========= GRID ========= */
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 0 20px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ========= GAME CARD ========= */
+  .game-card {
+    background: linear-gradient(145deg, #2a1020, #1a0f1a);
+    border-radius: 18px;
+    padding: 20px 14px 16px;
+    text-align: center;
+    border: 2px solid #4a1a3a;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+    pointer-events: none;
+  }
+  .game-card.playable {
+    border-color: #aa3a6a;
+    background: linear-gradient(145deg, #2e102a, #1a1030);
+  }
+  .game-card.playable:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 16px 40px rgba(255, 100, 150, 0.3);
+    border-color: #ff6b9d;
+  }
+  .game-card.coming-soon {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .game-card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .card-emoji {
+    font-size: 52px;
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    transition: transform 0.2s;
+  }
+  .game-card.playable:hover .card-emoji {
+    transform: scale(1.15) rotate(-5deg);
+  }
+
+  .card-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #eee;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .player-badge {
+    display: inline-block;
+    background: rgba(0, 210, 211, 0.15);
+    color: #00d2d3;
+    border: 1px solid rgba(0, 210, 211, 0.3);
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .play-btn {
+    display: block;
+    width: 100%;
+    padding: 9px 0;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.15s, opacity 0.15s;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .play-btn.active {
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255, 107, 157, 0.4);
+  }
+  .play-btn.active:hover {
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+  .play-btn.inactive {
+    background: #2a2a3a;
+    color: #555;
+    cursor: not-allowed;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Playable card glow ring */
+  .game-card.playable::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43, #ffd32a, #00d2d3);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .game-card.playable:hover::after {
+    opacity: 0.5;
+  }
+
+  /* NEW badge */
+  .new-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ========= BOTTOM PADDING ========= */
+  .bottom-space { height: 20px; }
+</style>
+</head>
+<body>
+
+<!-- Stars background -->
+<div class="stars" id="stars"></div>
+
+<div style="position:relative;z-index:1">
+  <!-- Header -->
+  <div class="hub-header">
+    <div class="hub-title">🐷 PIGGY WORLD 🐷</div>
+    <div class="hub-subtitle">Choose your adventure</div>
+  </div>
+
+  <!-- PLAYABLE GAMES -->
+  <div class="section-label">🎮 Play Now</div>
+  <div class="games-grid">
+
+    <!-- Game 0: The OG -->
+    <div class="game-card playable">
+      <span class="new-badge">ORIGINAL</span>
+      <span class="card-emoji">🍳</span>
+      <div class="card-name">Piggies to Bacon (Classic)</div>
+      <div class="player-badge">👤 The very first one!</div>
+      <a class="play-btn active" href="../frankies-first-game/index.html">▶ PLAY</a>
+    </div>
+
+    <!-- Game 1: Piggies to Bacon -->
+    <div class="game-card playable">
+      <span class="new-badge">ORIGINAL</span>
+      <span class="card-emoji">🐷</span>
+      <div class="card-name">Disaster Piggies</div>
+      <div class="player-badge">👤 Frankie's #1</div>
+      <a class="play-btn active" href="index.html">▶ PLAY</a>
+    </div>
+
+    <!-- Game 2: Piggy Catch -->
+    <div class="game-card playable">
+      <span class="new-badge">NEW</span>
+      <span class="card-emoji">🧺</span>
+      <div class="card-name">Piggy Catch</div>
+      <div class="player-badge">👤 Catch 'em all!</div>
+      <a class="play-btn active" href="piggy-catch.html">▶ PLAY</a>
+    </div>
+
+    <!-- Game 3: Oink Memory -->
+    <div class="game-card playable">
+      <span class="new-badge">NEW</span>
+      <span class="card-emoji">🃏</span>
+      <div class="card-name">Oink Memory</div>
+      <div class="player-badge">👤 Match the pigs!</div>
+      <a class="play-btn active" href="oink-memory.html">▶ PLAY</a>
+    </div>
+
+  </div>
+
+  <!-- COMING SOON -->
+  <div class="section-label">🔒 Coming Soon</div>
+  <div class="games-grid">
+    <div class="game-card coming-soon"><span class="card-emoji">🏎️</span><div class="card-name">Pig Racer</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🏗️</span><div class="card-name">Pig Tower</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎨</span><div class="card-name">Piggy Painter</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎯</span><div class="card-name">Oink Quiz</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">💦</span><div class="card-name">Mud Splash</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🦘</span><div class="card-name">Pig Jump</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👨‍🍳</span><div class="card-name">Bacon Chef</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🌾</span><div class="card-name">Pig Farm Tycoon</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎣</span><div class="card-name">Piggy Fishing</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🫧</span><div class="card-name">Pig Bubble Pop</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎤</span><div class="card-name">Oink Karaoke</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🌀</span><div class="card-name">Pig Maze</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🐺</span><div class="card-name">Pig vs Wolf</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎵</span><div class="card-name">Oink Orchestra</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🏁</span><div class="card-name">Piggy Kart Racing</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🔍</span><div class="card-name">Pig Detective</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🥇</span><div class="card-name">Mud Olympics</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🥁</span><div class="card-name">Trotter Tapper</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🍖</span><div class="card-name">Pork Chop Chef</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🏝️</span><div class="card-name">Pig Island</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">⚔️</span><div class="card-name">Bacon Battle</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👃</span><div class="card-name">Snout Sorting</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">📡</span><div class="card-name">Ham Radio Tower</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👗</span><div class="card-name">Piggy Dress Up</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🧩</span><div class="card-name">Pig Puzzle</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<script>
+  // Generate twinkling stars
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.setProperty('--d', (2 + Math.random() * 4).toFixed(1) + 's');
+    s.style.animationDelay = (Math.random() * 4).toFixed(1) + 's';
+    s.style.width = s.style.height = (1 + Math.random() * 2).toFixed(1) + 'px';
+    starsEl.appendChild(s);
+  }
+
+  // Floating piggy snouts
+  const snouts = ['🐽','🐷','🐖','🐷','🐽','🐷'];
+  snouts.forEach((emoji, i) => {
+    const el = document.createElement('div');
+    el.className = 'snout-deco';
+    el.textContent = emoji;
+    el.style.left = (5 + i * 16 + Math.random() * 8) + '%';
+    el.style.top  = (10 + Math.random() * 75) + '%';
+    el.style.setProperty('--sd', (4 + Math.random() * 5).toFixed(1) + 's');
+    el.style.animationDelay = (Math.random() * 4).toFixed(1) + 's';
+    document.body.appendChild(el);
+  });
+</script>
+</body>
+</html>

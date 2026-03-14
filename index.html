@@ -217,7 +217,7 @@
   }
   /* ===== DISASTER VISUAL BACKGROUNDS ===== */
   #yard.sky-tornado {
-    background: linear-gradient(180deg, #0d1f05 0%, #1a2e08 45%, #2e4a10 60%, #1a3008 100%) !important;
+    background: linear-gradient(180deg, #060c03 0%, #0a1405 25%, #0f1e07 50%, #1a2e0a 65%, #243812 100%) !important;
     transition: background 0.4s;
   }
   #yard.sky-hurricane {
@@ -228,27 +228,65 @@
     background: linear-gradient(180deg, #1a0a00 0%, #3a1800 40%, #5a2800 60%, #3a1800 100%) !important;
     transition: background 0.4s;
   }
-  /* Tornado funnel */
+  /* ===== REALISTIC TORNADO ===== */
   #d-funnel {
-    position: absolute; top: 0; left: 50%;
+    position: fixed; top: 0; z-index: 9000;
+    pointer-events: none;
     transform: translateX(-50%);
-    z-index: 60; pointer-events: none;
   }
-  #d-funnel .funnel-cloud {
-    width: 220px; height: 80px;
-    background: radial-gradient(ellipse at center, #222 0%, #444 50%, transparent 80%);
+  .t-cloud {
+    width: 320px; height: 100px;
+    background: radial-gradient(ellipse at center, #0e150e 20%, #1c2b1a 55%, transparent 80%);
     border-radius: 50%; margin: 0 auto;
-    box-shadow: 0 0 80px 30px rgba(0,0,0,0.6);
+    box-shadow: 0 0 100px 50px rgba(0,0,0,0.85), 0 0 200px 80px rgba(5,10,5,0.5);
   }
-  #d-funnel .funnel-stem {
+  .t-layer {
     width: 0; height: 0;
-    border-left: 60px solid transparent;
-    border-right: 60px solid transparent;
-    border-top: 280px solid rgba(40,40,55,0.88);
     margin: 0 auto;
-    filter: blur(6px);
     transform-origin: top center;
-    animation: tornado-spin 0.2s linear infinite;
+  }
+  .t-layer-1 {
+    border-left: 120px solid transparent;
+    border-right: 120px solid transparent;
+    border-top: 70vh solid rgba(22,32,20,0.88);
+    filter: blur(3px);
+    animation: tornado-spin 0.16s linear infinite;
+  }
+  .t-layer-2 {
+    border-left: 100px solid transparent;
+    border-right: 100px solid transparent;
+    border-top: 68vh solid rgba(40,58,36,0.65);
+    filter: blur(5px);
+    animation: tornado-spin 0.22s linear infinite reverse;
+    margin-top: calc(-68vh - 8px);
+  }
+  .t-layer-3 {
+    border-left: 80px solid transparent;
+    border-right: 80px solid transparent;
+    border-top: 65vh solid rgba(30,48,26,0.75);
+    filter: blur(2px);
+    animation: tornado-spin 0.19s linear infinite;
+    margin-top: calc(-65vh - 4px);
+  }
+  .t-layer-4 {
+    border-left: 55px solid transparent;
+    border-right: 55px solid transparent;
+    border-top: 62vh solid rgba(60,80,50,0.5);
+    filter: blur(7px);
+    animation: tornado-spin 0.12s linear infinite reverse;
+    margin-top: calc(-62vh - 2px);
+  }
+  .t-dust {
+    width: 260px; height: 55px;
+    background: radial-gradient(ellipse, rgba(120,95,45,0.9) 0%, rgba(85,65,25,0.5) 45%, transparent 75%);
+    border-radius: 50%; margin: 0 auto;
+    margin-top: calc(-30px);
+    animation: dust-pulse 0.35s ease-in-out infinite alternate;
+    filter: blur(4px);
+  }
+  @keyframes dust-pulse {
+    from { transform: scaleX(0.8); opacity: 0.8; }
+    to   { transform: scaleX(1.2); opacity: 1; }
   }
   /* Hurricane rain canvas */
   #d-rain {
@@ -408,6 +446,22 @@
     text-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
   #bacon-hud .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ========= HUB HOME BUTTON ========= */
+  #hub-home-btn {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 999;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    border: none;
+    border-radius: 50px;
+    padding: 10px 22px;
+    color: white; font-size: 16px; font-weight: 900;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(255,107,157,0.7);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  #hub-home-btn:hover { opacity: 0.85; }
 
   /* ========= KITCHEN FRYING PAN ========= */
   #frying-pan {
@@ -874,6 +928,9 @@
 </style>
 </head>
 <body>
+
+<!-- ========= HUB HOME BUTTON (always visible) ========= -->
+<a href="hub.html" id="hub-home-btn">🏠 Piggy World</a>
 
 <!-- ========= MONEY HUD (always visible) ========= -->
 <div id="money-hud">
@@ -1956,10 +2013,11 @@ let disasterCountdown = 30;
 let disasterInterval = null;
 let disasterScheduleTimer = null;
 let pigsInShelter = 0;
+let disasterGraceUsed = false; // only one 5-second grace per disaster
 
 function scheduleNextDisaster() {
   clearTimeout(disasterScheduleTimer);
-  const delay = 20 * 1000; // exactly 20 sec
+  const delay = 60 * 1000; // 1 minute between disasters
   disasterScheduleTimer = setTimeout(() => {
     if (disasterState === 'idle') {
       triggerDisasterWarning(disasters[Math.floor(Math.random() * disasters.length)]);
@@ -1980,38 +2038,44 @@ function startDisasterVisuals(disaster) {
   if (disaster.id === 'tornado') {
     yard.classList.add('sky-tornado');
 
-    // Funnel cloud dropped into yard
-    const funnel = document.createElement('div');
-    funnel.id = 'd-funnel';
-    funnel.innerHTML = '<div class="funnel-cloud"></div><div class="funnel-stem"></div>';
-    yard.appendChild(funnel);
+    // Div-based realistic tornado
+    const wrap = document.createElement('div');
+    wrap.id = 'd-funnel';
+    wrap.innerHTML = `
+      <div class="t-cloud"></div>
+      <div class="t-layer t-layer-1"></div>
+      <div class="t-layer t-layer-2"></div>
+      <div class="t-layer t-layer-3"></div>
+      <div class="t-layer t-layer-4"></div>
+      <div class="t-dust"></div>
+    `;
+    document.body.appendChild(wrap);
 
-    // Sweep funnel left-right
+    const debrisEmoji = ['🍃','🪵','📦','🧱','🪑','🌿','🛖','🐄','🐔'];
     let tx = 50, tDir = 1;
-    const animFunnel = () => {
+
+    const moveFunnel = () => {
       if (disasterState !== 'warning') return;
       tx += tDir * 0.4;
-      if (tx > 75) tDir = -1;
-      if (tx < 15) tDir = 1;
-      funnel.style.left = tx + '%';
-      disasterVisualRAF = requestAnimationFrame(animFunnel);
+      if (tx > 78) tDir = -1;
+      if (tx < 12) tDir =  1;
+      wrap.style.left = tx + 'vw';
+      disasterVisualRAF = requestAnimationFrame(moveFunnel);
     };
-    animFunnel();
+    moveFunnel();
 
-    // Debris
-    const debrisEmoji = ['🍃','🪵','📦','🧱','🪑','🌿','🛖'];
     debrisInterval = setInterval(() => {
       if (disasterState !== 'warning') return;
       const d = document.createElement('div');
       d.textContent = debrisEmoji[Math.floor(Math.random() * debrisEmoji.length)];
-      d.style.cssText = `position:absolute;font-size:${24+Math.random()*24}px;left:${Math.random()*90}%;top:${10+Math.random()*70}%;z-index:65;pointer-events:none;transition:transform 1s linear,opacity 1s linear;`;
-      yard.appendChild(d);
+      d.style.cssText = `position:fixed;font-size:${24+Math.random()*24}px;left:${Math.random()*90}vw;top:${10+Math.random()*70}vh;z-index:9001;pointer-events:none;transition:transform 1.2s linear,opacity 1.2s linear;`;
+      document.body.appendChild(d);
       requestAnimationFrame(() => {
         d.style.transform = `translate(${(Math.random()-0.5)*400}px,${(Math.random()-0.5)*300}px) rotate(${Math.random()*720}deg)`;
         d.style.opacity = '0';
       });
-      setTimeout(() => d.remove(), 1100);
-    }, 160);
+      setTimeout(() => d.remove(), 1300);
+    }, 180);
 
   } else if (disaster.id === 'hurricane') {
     yard.classList.add('sky-hurricane');
@@ -2095,6 +2159,7 @@ function triggerDisasterWarning(disaster) {
   currentDisaster = disaster;
   disasterState = 'warning';
   disasterCountdown = 30;
+  disasterGraceUsed = false;
 
   document.getElementById('dw-icon').textContent  = disaster.emoji;
   document.getElementById('dw-name').textContent  = '⚠️ ' + disaster.name + ' WARNING!';
@@ -2114,9 +2179,23 @@ function triggerDisasterWarning(disaster) {
     const el = document.getElementById('dw-count');
     el.textContent = disasterCountdown;
     el.className = 'dw-count' + (disasterCountdown <= 10 ? ' urgent' : '');
+
+    // Urgent oinking when pigs are still outside in the last 10 seconds
+    if (disasterCountdown <= 10 && disasterCountdown > 0 && yardPiggies.length > 0) {
+      playOink();
+    }
+
     if (disasterCountdown <= 0) {
-      clearInterval(disasterInterval);
-      strikeDisaster();
+      // If pigs are still outside and grace hasn't been used, give 5 more seconds
+      if (yardPiggies.length > 0 && !disasterGraceUsed) {
+        disasterGraceUsed = true;
+        disasterCountdown = 5;
+        playOink(); playOink(); // double oink to signal the grace period
+        showMessage('🐷 OINK OINK! 5 extra seconds — save your piggies!!');
+      } else {
+        clearInterval(disasterInterval);
+        strikeDisaster();
+      }
     }
   }, 1000);
 }
@@ -2198,7 +2277,7 @@ applyPigSkin(); // apply saved skin to yard pigs
 fryingPan.textContent = currentPanSkin.emoji; // apply saved pan skin
 requestAnimationFrame(animate);
 updateHUD();
-scheduleNextDisaster(); // first disaster in 20 sec, then every 20 sec
+scheduleNextDisaster(); // first disaster in 1 min, then every 1 min
 
 // Allow direct screen access via URL hash (for screenshots/testing)
 if (location.hash === '#kitchen') { showScreen('kitchen'); }
