@@ -3,2284 +3,373 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Frankie's Piggies</title>
+<title>🐷 Piggy World 🐷</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    overflow: hidden;
-    height: 100vh;
-    font-family: 'Segoe UI', sans-serif;
-    cursor: default;
-    user-select: none;
+    background: #f5a0bf;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #4a0a2a;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
-  /* ========= SCREENS ========= */
-  .screen { display: none; width: 100%; height: 100vh; position: relative; }
-  .screen.active { display: block; }
-
-  /* --- YARD --- */
-  #yard {
-    background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 55%, #7ec850 55%, #5dad3a 100%);
+  /* Pink piggy snout pattern background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse 36px 28px at 50% 50%, #ffcce0 60%, transparent 61%),
+      radial-gradient(circle 7px at 36% 40%, #f08ab0 100%),
+      radial-gradient(circle 7px at 64% 40%, #f08ab0 100%);
+    background-size: 90px 90px;
+    background-position: 0 0;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  /* --- SUN --- */
-  .sun {
-    position: absolute; top: 40px; right: 80px;
-    width: 90px; height: 90px;
-    background: radial-gradient(circle, #FFE44D 40%, #FFD700 70%, transparent 71%);
-    border-radius: 50%;
-    z-index: 1;
-    box-shadow: 0 0 40px 15px rgba(255,220,50,0.4), 0 0 80px 30px rgba(255,200,0,0.15);
-    animation: sun-glow 3s ease-in-out infinite;
-  }
-  @keyframes sun-glow {
-    0%, 100% { box-shadow: 0 0 40px 15px rgba(255,220,50,0.4), 0 0 80px 30px rgba(255,200,0,0.15); }
-    50% { box-shadow: 0 0 50px 20px rgba(255,220,50,0.5), 0 0 100px 40px rgba(255,200,0,0.2); }
-  }
-  .sun-ray {
-    position: absolute; top: 50%; left: 50%;
-    width: 120px; height: 120px;
-    margin-top: -60px; margin-left: -60px;
-    animation: sun-spin 20s linear infinite;
-  }
-  @keyframes sun-spin { to { transform: rotate(360deg); } }
-
-  /* --- YARD PIGGY (multiple) --- */
-  .yard-piggy {
-    position: absolute;
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 50;
-    will-change: transform;
-    transition: filter 0.2s;
-  }
-  .yard-piggy.picked-up {
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
-    z-index: 51;
-  }
-
-  /* --- KITCHEN --- */
-  #kitchen {
-    background: linear-gradient(180deg, #f5e6d0 0%, #e8d5b8 100%);
-  }
-  .kitchen-floor {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
-    background: linear-gradient(180deg, #c4956a, #a87a52);
-    z-index: 4;
-  }
-  .kitchen-counter {
-    position: absolute; bottom: 38%; left: 10%; right: 10%; height: 12%;
-    background: linear-gradient(180deg, #8B7355, #6b5740);
-    border-radius: 8px 8px 0 0;
-    z-index: 5;
-  }
-  .kitchen-counter-top {
-    position: absolute; top: -6px; left: -2%; right: -2%; height: 10px;
-    background: linear-gradient(180deg, #d4c4a8, #bfae8e);
-    border-radius: 4px;
-  }
-
-  /* --- SHOP --- */
-  #shop {
-    background: linear-gradient(135deg, #fff3e0, #ffe0b2, #ffcc80);
-    overflow-y: auto;
-  }
-
-  .pig-body-wrap {
+  /* ========= HEADER ========= */
+  .hub-header {
+    text-align: center;
+    padding: 30px 20px 20px;
     position: relative;
-    width: 80px;
-    height: 70px;
   }
-  .pig-body {
-    position: absolute; top: 8px; left: 10px;
-    width: 55px; height: 40px;
-    background: var(--pig-color, #f8a0b0);
-    border-radius: 50%; z-index: 2;
+  .hub-title {
+    font-size: clamp(36px, 8vw, 72px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #ff6b9d, #ffb3c6, #ff9f43, #ffd32a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    text-shadow: none;
+    animation: title-pulse 3s ease-in-out infinite;
   }
-  .pig-head {
-    position: absolute; top: 0; right: -8px;
-    width: 38px; height: 34px;
-    background: var(--pig-color, #f8a0b0);
-    border-radius: 50%; z-index: 3;
+  @keyframes title-pulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15); }
   }
-  .pig-eye {
-    position: absolute; top: 8px;
-    width: 6px; height: 7px;
-    background: #333; border-radius: 50%;
-    transition: height 0.08s ease, top 0.08s ease, border-radius 0.08s ease;
-  }
-  .pig-eye.right-eye { right: 8px; }
-  .pig-eye.left-eye { right: 18px; }
-  .pig-eye.winking { height: 2px; top: 11px; border-radius: 1px; }
-  .pig-nose {
-    position: absolute; top: 14px; right: 2px;
-    width: 16px; height: 11px;
-    background: var(--pig-nose, #e08090);
-    border-radius: 50%;
-  }
-  .pig-nostril {
-    position: absolute; top: 3px;
-    width: 4px; height: 4px;
-    background: var(--pig-nostril, #c06070);
-    border-radius: 50%;
-  }
-  .pig-nostril.left { left: 3px; }
-  .pig-nostril.right { right: 3px; }
-  .pig-ear {
-    position: absolute; top: -5px;
-    width: 12px; height: 10px;
-    background: var(--pig-ear, #e89aa8);
-    border-radius: 50% 50% 20% 20%;
-    z-index: 4;
-  }
-  .pig-ear.right-ear { right: 6px; transform: rotate(15deg); }
-  .pig-ear.left-ear { right: 18px; transform: rotate(-15deg); }
-  .pig-tail {
-    position: absolute; top: 14px; left: -2px;
-    width: 18px; height: 18px;
-    border: 3px solid var(--pig-nose, #e08090);
-    border-color: var(--pig-nose, #e08090) transparent transparent var(--pig-nose, #e08090);
-    border-radius: 50%; transform: rotate(45deg); z-index: 1;
-    animation: tail-wag 0.4s ease-in-out infinite;
-  }
-  @keyframes tail-wag {
-    0%, 100% { transform: rotate(35deg); }
-    50% { transform: rotate(55deg); }
-  }
-  .pig-legs {
-    position: absolute; bottom: 0; left: 14px;
-    display: flex; gap: 6px; z-index: 1;
-  }
-  .pig-leg {
-    position: relative; width: 9px; height: 16px;
-    background: var(--pig-color, #f8a0b0);
-    border-radius: 0 0 4px 4px; transform-origin: top center;
-  }
-  .pig-hoof {
-    position: absolute; bottom: 0; left: 1px;
-    width: 7px; height: 4px;
-    background: var(--pig-nostril, #c07080);
-    border-radius: 0 0 3px 3px;
-  }
-  .leg-1 { animation: walk-left 0.3s ease-in-out infinite; }
-  .leg-2 { animation: walk-right 0.3s ease-in-out infinite; }
-  .leg-3 { animation: walk-left 0.3s ease-in-out infinite; }
-  .leg-4 { animation: walk-right 0.3s ease-in-out infinite; }
-  .yard-piggy.stopped .pig-leg { animation: none; }
-  .yard-piggy.stopped .pig-tail { animation: none; transform: rotate(45deg); }
-  @keyframes walk-left {
-    0%, 100% { transform: rotate(-20deg); }
-    50% { transform: rotate(20deg); }
-  }
-  @keyframes walk-right {
-    0%, 100% { transform: rotate(20deg); }
-    50% { transform: rotate(-20deg); }
+  .hub-subtitle {
+    font-size: 16px;
+    color: #8a3060;
+    margin-top: 6px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
   }
 
-  /* ========= DISASTER SYSTEM ========= */
-  #disaster-warning {
-    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-    z-index: 400; display: none; flex-direction: column; align-items: center;
-    pointer-events: none;
-  }
-  #disaster-warning.active { display: flex; }
-  .disaster-warn-box {
-    background: rgba(170,0,0,0.95); border-radius: 0 0 22px 22px;
-    padding: 10px 28px 16px; text-align: center;
-    box-shadow: 0 4px 40px rgba(255,0,0,0.6);
-    animation: warn-pulse 0.5s ease-in-out infinite alternate;
-    pointer-events: auto; min-width: 280px;
-  }
-  @keyframes warn-pulse {
-    from { box-shadow: 0 4px 20px rgba(255,0,0,0.4); }
-    to   { box-shadow: 0 4px 60px rgba(255,60,0,0.95); }
-  }
-  .dw-icon     { font-size: 44px; line-height: 1.1; }
-  .dw-name     { font-size: 24px; font-weight: 900; color: #FFD700; letter-spacing: 3px; }
-  .dw-sub      { font-size: 14px; color: #ffdddd; font-weight: 600; margin: 2px 0 4px; }
-  .dw-count    { font-size: 56px; font-weight: 900; color: white; line-height: 1;
-                 text-shadow: 0 0 20px rgba(255,120,0,0.9); }
-  .dw-count.urgent { color: #ff4444; animation: count-throb 0.2s ease-in-out infinite; }
-  @keyframes count-throb {
-    0%,100% { transform: scale(1); }
-    50%     { transform: scale(1.12); }
-  }
-  /* Danger vignette on yard during warning */
-  #yard.disaster-mode::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-    box-shadow: inset 0 0 100px 40px rgba(255,0,0,0.35);
-    animation: vignette-pulse 0.5s ease-in-out infinite alternate;
-  }
-  @keyframes vignette-pulse {
-    from { opacity: 0.4; }
-    to   { opacity: 1; }
-  }
-  /* ===== DISASTER VISUAL BACKGROUNDS ===== */
-  #yard.sky-tornado {
-    background: linear-gradient(180deg, #060c03 0%, #0a1405 25%, #0f1e07 50%, #1a2e0a 65%, #243812 100%) !important;
-    transition: background 0.4s;
-  }
-  #yard.sky-hurricane {
-    background: linear-gradient(180deg, #02050f 0%, #05102a 40%, #0a1e3a 60%, #0d2040 100%) !important;
-    transition: background 0.4s;
-  }
-  #yard.sky-earthquake {
-    background: linear-gradient(180deg, #1a0a00 0%, #3a1800 40%, #5a2800 60%, #3a1800 100%) !important;
-    transition: background 0.4s;
-  }
-  /* ===== REALISTIC TORNADO ===== */
-  #d-funnel {
-    position: fixed; top: 0; z-index: 9000;
-    pointer-events: none;
-    transform: translateX(-50%);
-  }
-  .t-cloud {
-    width: 320px; height: 100px;
-    background: radial-gradient(ellipse at center, #0e150e 20%, #1c2b1a 55%, transparent 80%);
-    border-radius: 50%; margin: 0 auto;
-    box-shadow: 0 0 100px 50px rgba(0,0,0,0.85), 0 0 200px 80px rgba(5,10,5,0.5);
-  }
-  .t-layer {
-    width: 0; height: 0;
-    margin: 0 auto;
-    transform-origin: top center;
-  }
-  .t-layer-1 {
-    border-left: 120px solid transparent;
-    border-right: 120px solid transparent;
-    border-top: 70vh solid rgba(22,32,20,0.88);
-    filter: blur(3px);
-    animation: tornado-spin 0.16s linear infinite;
-  }
-  .t-layer-2 {
-    border-left: 100px solid transparent;
-    border-right: 100px solid transparent;
-    border-top: 68vh solid rgba(40,58,36,0.65);
-    filter: blur(5px);
-    animation: tornado-spin 0.22s linear infinite reverse;
-    margin-top: calc(-68vh - 8px);
-  }
-  .t-layer-3 {
-    border-left: 80px solid transparent;
-    border-right: 80px solid transparent;
-    border-top: 65vh solid rgba(30,48,26,0.75);
-    filter: blur(2px);
-    animation: tornado-spin 0.19s linear infinite;
-    margin-top: calc(-65vh - 4px);
-  }
-  .t-layer-4 {
-    border-left: 55px solid transparent;
-    border-right: 55px solid transparent;
-    border-top: 62vh solid rgba(60,80,50,0.5);
-    filter: blur(7px);
-    animation: tornado-spin 0.12s linear infinite reverse;
-    margin-top: calc(-62vh - 2px);
-  }
-  .t-dust {
-    width: 260px; height: 55px;
-    background: radial-gradient(ellipse, rgba(120,95,45,0.9) 0%, rgba(85,65,25,0.5) 45%, transparent 75%);
-    border-radius: 50%; margin: 0 auto;
-    margin-top: calc(-30px);
-    animation: dust-pulse 0.35s ease-in-out infinite alternate;
-    filter: blur(4px);
-  }
-  @keyframes dust-pulse {
-    from { transform: scaleX(0.8); opacity: 0.8; }
-    to   { transform: scaleX(1.2); opacity: 1; }
-  }
-  /* Hurricane rain canvas */
-  #d-rain {
-    position: absolute; inset: 0;
-    z-index: 60; pointer-events: none;
-  }
-  /* Hurricane banner */
-  #d-hurricane-icon {
-    position: absolute; top: 20px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 140px; z-index: 61; pointer-events: none;
-    animation: tornado-spin 2s linear infinite;
-    opacity: 0.65;
-  }
-  /* Earthquake crack */
-  .d-crack {
-    position: absolute; height: 5px;
-    background: linear-gradient(90deg, transparent, #1a0800 25%, #3a1800 50%, #1a0800 75%, transparent);
-    z-index: 60; pointer-events: none;
-    clip-path: inset(0 100% 0 0);
-    animation: crack-split 0.4s ease-out forwards;
-  }
-  /* Earthquake dust */
-  .d-dust {
-    position: absolute; width: 55px; height: 55px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(200,130,60,0.85) 0%, transparent 70%);
-    z-index: 61; pointer-events: none;
-    animation: dust-rise 1.5s ease-out forwards;
-  }
-  /* Earthquake shake on yard */
-  #yard.quake-rumble {
-    animation: quake-mild 0.12s ease-in-out infinite;
-  }
-  /* Strike overlay */
-  #disaster-overlay {
-    position: fixed; inset: 0; z-index: 600;
-    display: none; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; padding: 20px;
-  }
-  #disaster-overlay.active { display: flex; }
-  .ds-icon  { font-size: 110px; animation: spin-strike 0.7s linear infinite; }
-  @keyframes spin-strike { to { transform: rotate(360deg); } }
-  .ds-title { font-size: 46px; font-weight: 900; color: white;
-              text-shadow: 0 4px 16px rgba(0,0,0,0.7); margin: 10px 0 6px; }
-  .ds-damage { font-size: 22px; color: white; font-weight: 700; white-space: pre-line;
-               text-shadow: 0 2px 8px rgba(0,0,0,0.6); margin-bottom: 8px; max-width: 340px; }
-  .ds-ok-btn {
-    margin-top: 14px; background: white; color: #333; border: none;
-    font-size: 18px; font-weight: 700; padding: 12px 44px;
-    border-radius: 50px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    transition: transform 0.15s;
-  }
-  .ds-ok-btn:hover { transform: scale(1.06); }
-  /* Earthquake screen shake */
-  .quake-shake { animation: quake 0.08s ease-in-out infinite !important; }
-  @keyframes quake {
-    0%,100% { transform: translate(0,0); }
-    25%     { transform: translate(-6px,3px); }
-    75%     { transform: translate(6px,-3px); }
-  }
-  /* Mild yard rumble during earthquake warning */
-  @keyframes quake-mild {
-    0%,100% { transform: translate(0,0); }
-    25%     { transform: translate(-3px,1px); }
-    75%     { transform: translate(3px,-1px); }
-  }
-  /* Crack lines */
-  @keyframes crack-split {
-    from { clip-path: inset(0 100% 0 0); opacity:1; }
-    to   { clip-path: inset(0 0% 0 0);   opacity:1; }
-  }
-  /* Dust puff */
-  @keyframes dust-rise {
-    from { opacity: 0.8; transform: scale(0.5) translateY(0); }
-    to   { opacity: 0;   transform: scale(3)   translateY(-50px); }
-  }
-  @keyframes tornado-spin {
-    to { transform: rotate(360deg) skewX(8deg); }
-  }
-
-  /* ========= RAINBOW PIG SKIN ========= */
-  .rainbow-skin .pig-body {
-    background: linear-gradient(120deg, #ff4444, #ff9500, #ffd700, #44cc44, #3399ff, #9933ff, #ff44cc) !important;
-  }
-  .rainbow-skin .pig-head {
-    background: linear-gradient(135deg, #ffd700, #44cc44, #3399ff, #9933ff) !important;
-  }
-  .rainbow-skin .pig-ear  { background: #ff9500 !important; }
-  .rainbow-skin .pig-nose { background: #44cc44 !important; }
-  .rainbow-skin .pig-nostril { background: #1a7acc !important; }
-  .rainbow-skin .pig-leg  { background: #3399ff !important; }
-  .rainbow-skin .pig-hoof { background: #9933ff !important; }
-  .rainbow-skin .pig-tail {
-    border-color: #ff44cc transparent transparent #ff44cc !important;
-  }
-  .rainbow-skin {
-    animation: rainbow-shimmer 4s linear infinite;
-  }
-  @keyframes rainbow-shimmer {
-    0%   { filter: hue-rotate(0deg)   saturate(1.6) brightness(1.05); }
-    100% { filter: hue-rotate(360deg) saturate(1.6) brightness(1.05); }
-  }
-
-  /* ========= HOUSE BUTTON (yard) ========= */
-  #house-btn {
-    position: absolute; bottom: 18%; right: 8%;
-    font-size: 64px; cursor: pointer; z-index: 60;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
-    transition: transform 0.2s;
-  }
-  #house-btn:hover { transform: scale(1.15); }
-  #house-label {
-    position: absolute; bottom: 10%; right: 6%;
-    background: rgba(0,0,0,0.5); color: white;
-    padding: 6px 16px; border-radius: 20px;
-    font-size: 14px; font-weight: 600; z-index: 60;
-  }
-
-  /* ========= BARN BUTTON (yard, next to house) ========= */
-  #barn-btn {
-    position: absolute; bottom: 18%; right: 20%;
-    font-size: 80px; cursor: pointer; z-index: 60;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
-    transition: transform 0.2s;
-    line-height: 1;
-  }
-  #barn-btn:hover { transform: scale(1.15); }
-  #barn-hud-label {
-    position: absolute; bottom: 9%; right: 18%;
-    background: rgba(139,69,19,0.85); color: white;
-    padding: 6px 18px; border-radius: 20px;
-    font-size: 15px; font-weight: 700; z-index: 60;
-  }
-
-  /* ========= MONEY HUD ========= */
-  #money-hud {
-    position: fixed; top: 16px; right: 20px;
-    background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-    border-radius: 16px; padding: 10px 20px;
-    color: white; text-align: center; z-index: 200;
-    font-size: 28px; font-weight: 900;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    cursor: pointer; transition: transform 0.15s;
-  }
-  #money-hud:hover { transform: scale(1.08); }
-  #money-hud .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
-  #money-hud .cashout-hint { font-size: 9px; opacity: 0.5; margin-top: 2px; }
-
-  /* ========= BACON COUNT HUD ========= */
-  #bacon-hud {
-    position: fixed; top: 16px; left: 20px;
-    background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-    border-radius: 16px; padding: 10px 20px;
-    color: white; text-align: center; z-index: 200;
-    font-size: 28px; font-weight: 900;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-  #bacon-hud .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
-
-  /* ========= HUB HOME BUTTON ========= */
-  #hub-home-btn {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    z-index: 999;
-    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
-    border: none;
-    border-radius: 50px;
-    padding: 10px 22px;
-    color: white; font-size: 16px; font-weight: 900;
-    text-decoration: none;
-    box-shadow: 0 4px 20px rgba(255,107,157,0.7);
-    letter-spacing: 1px;
-    white-space: nowrap;
-  }
-  #hub-home-btn:hover { opacity: 0.85; }
-
-  /* ========= KITCHEN FRYING PAN ========= */
-  #frying-pan {
-    position: absolute; bottom: 42%; left: 50%; transform: translateX(-50%);
-    font-size: 80px; cursor: pointer; z-index: 10;
-    transition: transform 0.2s;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-  }
-  #frying-pan:hover { transform: translateX(-50%) scale(1.1); }
-  #frying-pan.cooking {
-    animation: pan-sizzle 0.5s ease-in-out;
-  }
-  @keyframes pan-sizzle {
-    0%, 100% { transform: translateX(-50%) rotate(0deg); }
-    25% { transform: translateX(-50%) rotate(-10deg) scale(1.1); }
-    75% { transform: translateX(-50%) rotate(10deg) scale(1.1); }
-  }
-
-  #cook-label {
-    position: absolute; bottom: 36%; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.5); color: white;
-    padding: 8px 20px; border-radius: 20px;
-    font-size: 16px; font-weight: 600; z-index: 10;
-  }
-
-  /* ========= KITCHEN BUTTONS ========= */
-  .kitchen-btn-row {
-    position: absolute; bottom: 4%; left: 0; right: 0; z-index: 60;
-    display: flex; justify-content: center; align-items: center;
-    gap: 12px; padding: 0 16px;
-  }
-  .kitchen-btn {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-    border: none; color: white; font-size: 16px; font-weight: 700;
-    padding: 12px 22px; border-radius: 50px; cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: transform 0.15s; white-space: nowrap; flex-shrink: 0;
-  }
-  .kitchen-btn:hover { transform: scale(1.05); }
-  #sell-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  /* ========= CUSTOMERS ========= */
-  .kitchen-register {
-    position: absolute; bottom: 42%; right: 14%;
-    font-size: 40px; z-index: 6;
-    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
-  }
-  .customer-table {
-    position: absolute; bottom: 32%; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 50px; z-index: 3;
-    align-items: flex-end;
-  }
-  .customer {
-    text-align: center; position: relative;
-    transition: transform 0.3s;
-    cursor: pointer;
-  }
-  /* --- CSS PERSON --- */
-  .person-body {
-    position: relative; width: 140px; height: 280px;
-  }
-  .person-head {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 70px; height: 70px; border-radius: 50%;
-    z-index: 3;
-  }
-  .person-hair {
-    position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
-    width: 78px; height: 38px; border-radius: 50% 50% 0 0;
-    z-index: 4;
-  }
-  .person-eyes {
-    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
-    width: 32px; display: flex; justify-content: space-between; z-index: 5;
-  }
-  .person-eye {
-    width: 8px; height: 10px; background: #333; border-radius: 50%;
-  }
-  .person-mouth {
-    position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
-    width: 16px; height: 8px; border-bottom: 3px solid #333;
-    border-radius: 0 0 50% 50%; z-index: 5;
-  }
-  .person-torso {
-    position: absolute; top: 65px; left: 50%; transform: translateX(-50%);
-    width: 72px; height: 85px; border-radius: 10px 10px 0 0;
-    z-index: 2;
-  }
-  .person-arm {
-    position: absolute; top: 68px;
-    width: 22px; height: 75px; border-radius: 11px;
-    z-index: 1; transform-origin: top center;
-  }
-  .person-arm.left-arm { left: 6px; transform: rotate(8deg); }
-  .person-arm.right-arm { right: 6px; transform: rotate(-8deg); }
-  .customer.waiting .person-arm {
-    animation: arm-idle 2s ease-in-out infinite;
-  }
-  .customer.waiting .person-arm.right-arm {
-    animation: arm-idle 2s ease-in-out infinite 0.5s;
-  }
-  @keyframes arm-idle {
-    0%, 100% { transform: rotate(8deg); }
-    50% { transform: rotate(3deg); }
-  }
-  .customer.happy .person-arm.right-arm {
-    animation: arm-wave 0.4s ease-in-out 3;
-  }
-  @keyframes arm-wave {
-    0%, 100% { transform: rotate(-8deg); }
-    50% { transform: rotate(-40deg); }
-  }
-  .person-legs {
-    position: absolute; top: 148px; left: 50%; transform: translateX(-50%);
-    width: 60px; display: flex; justify-content: space-between;
-    z-index: 2;
-  }
-  .person-leg {
-    width: 25px; height: 80px; border-radius: 0 0 8px 8px;
-  }
-  .person-shoe {
-    position: absolute; bottom: 0; left: -3px;
-    width: 30px; height: 10px; border-radius: 5px 10px 5px 5px;
-  }
-  .customer .speech {
-    position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-    background: white; color: #333; padding: 6px 14px; border-radius: 14px;
-    font-size: 13px; font-weight: 600; white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    opacity: 0; transition: opacity 0.3s;
-    z-index: 20;
-  }
-  .customer .speech::after {
-    content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
-    width: 0; height: 0;
-    border-left: 6px solid transparent; border-right: 6px solid transparent;
-    border-top: 6px solid white;
-  }
-  .customer .speech.show { opacity: 1; }
-  .customer.waiting .person { animation: customer-bounce 1s ease-in-out infinite; }
-  @keyframes customer-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-  }
-  .customer.happy .person { animation: customer-happy 0.5s ease-out; }
-  @keyframes customer-happy {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-  }
-  .money-rain {
-    position: absolute; pointer-events: none; font-size: 24px;
-    animation: rain-fall 1.2s ease-out forwards; z-index: 300;
-  }
-  @keyframes rain-fall {
-    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
-    50% { opacity: 1; transform: translateY(-60px) rotate(20deg); }
-    100% { opacity: 0; transform: translateY(-100px) rotate(-10deg) scale(0.5); }
-  }
-
-  /* ========= SELL POPUP ========= */
-  .sell-popup {
-    position: absolute; pointer-events: none;
-    font-size: 32px; font-weight: 900; color: #4CAF50;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    animation: money-fly 1s ease-out forwards;
-    z-index: 300;
-  }
-  @keyframes money-fly {
-    0% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
-  }
-
-  /* ========= BACON COOKING ANIMATION ========= */
-  .bacon-pop {
-    position: absolute; pointer-events: none;
+  /* Piggy snout overlay emojis (decorative) */
+  .snout-deco {
+    position: fixed;
     font-size: 40px;
-    animation: bacon-pop-up 0.8s ease-out forwards;
-    z-index: 300;
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+    animation: snout-float var(--sd, 6s) ease-in-out infinite;
   }
-  @keyframes bacon-pop-up {
-    0% { opacity: 0; transform: scale(0.3) translateY(20px); }
-    40% { opacity: 1; transform: scale(1.3) translateY(-20px); }
-    100% { opacity: 1; transform: scale(1) translateY(-10px); }
-  }
-
-  /* ========= SHOP ========= */
-  .shop-title {
-    text-align: center; padding-top: 30px;
-    font-size: 36px; font-weight: 900; color: #5d4037;
-  }
-  .shop-section {
-    margin: 20px auto; max-width: 600px;
-  }
-  .shop-section h3 {
-    font-size: 20px; color: #6d4c41; margin: 12px 20px;
-  }
-  .shop-items {
-    display: flex; flex-wrap: wrap; gap: 12px; padding: 0 20px;
-    justify-content: center;
-  }
-  .shop-item {
-    background: white; border-radius: 16px; padding: 16px;
-    text-align: center; cursor: pointer; width: 120px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.15s, box-shadow 0.15s;
-    border: 3px solid transparent;
-  }
-  .shop-item:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
-  .shop-item.owned { border-color: #4CAF50; }
-  .shop-item.selected { border-color: #2196F3; box-shadow: 0 0 0 3px rgba(33,150,243,0.3); }
-  .shop-item .preview { font-size: 40px; margin-bottom: 6px; }
-  .shop-item .item-name { font-size: 13px; font-weight: 600; color: #333; }
-  .shop-item .item-price { font-size: 14px; color: #888; margin-top: 4px; }
-  .shop-item .item-price.free { color: #4CAF50; }
-
-  .shop-back {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-    border: none; color: white; font-size: 18px; font-weight: 700;
-    padding: 12px 40px; border-radius: 50px; cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 60;
-  }
-  .shop-back:hover { transform: translateX(-50%) scale(1.05); }
-
-  /* ========= CASH OUT POPUP ========= */
-  #cashout-overlay {
-    position: fixed; inset: 0; z-index: 500;
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
-  }
-  #cashout-overlay.show { display: flex; }
-  .cashout-box {
-    background: white; border-radius: 24px; padding: 30px 40px;
-    text-align: center; max-width: 340px; width: 90%;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  }
-  .cashout-box .cashout-icon { font-size: 50px; margin-bottom: 10px; }
-  .cashout-box h2 { font-size: 24px; color: #333; margin-bottom: 6px; }
-  .cashout-box .cashout-amount {
-    font-size: 48px; font-weight: 900; color: #4CAF50; margin: 10px 0;
-  }
-  .cashout-box .cashout-label { font-size: 14px; color: #888; margin-bottom: 20px; }
-  .cashout-methods {
-    display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;
-  }
-  .cashout-method {
-    background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 14px;
-    padding: 12px; cursor: pointer; font-size: 16px; font-weight: 600;
-    color: #333; transition: all 0.15s;
-  }
-  .cashout-method:hover { border-color: #4CAF50; background: #e8f5e9; }
-  .cashout-cancel {
-    background: none; border: none; color: #999; font-size: 14px;
-    cursor: pointer; padding: 8px;
-  }
-  .cashout-cancel:hover { color: #333; }
-
-  /* success screen after cashing out */
-  .cashout-success {
-    display: none; flex-direction: column; align-items: center;
-  }
-  .cashout-success.show { display: flex; }
-  .cashout-success .check {
-    font-size: 60px; margin-bottom: 10px;
-    animation: check-bounce 0.5s ease-out;
-  }
-  @keyframes check-bounce {
-    0% { transform: scale(0); }
-    60% { transform: scale(1.3); }
-    100% { transform: scale(1); }
-  }
-  .cashout-success h2 { font-size: 22px; color: #4CAF50; margin-bottom: 6px; }
-  .cashout-success .success-amount { font-size: 36px; font-weight: 900; color: #333; }
-  .cashout-success .success-label { font-size: 14px; color: #888; margin: 10px 0 20px; }
-
-  /* ========= MESSAGES ========= */
-  #message {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7); color: white;
-    padding: 16px 32px; border-radius: 20px;
-    font-size: 22px; font-weight: 700; z-index: 400;
-    pointer-events: none; opacity: 0; transition: opacity 0.3s;
-  }
-  #message.show { opacity: 1; }
-
-  /* piggy hint on yard */
-  #piggy-hint {
-    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.4); color: white;
-    padding: 8px 20px; border-radius: 20px;
-    font-size: 14px; z-index: 100; backdrop-filter: blur(6px);
+  @keyframes snout-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(8deg); }
   }
 
+  /* Floating stars background */
+  .stars {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .star {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d, 3s) ease-in-out infinite;
+    opacity: 0;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.8; }
+  }
 
-  /* ========= BARN SCREEN ========= */
-  #barn {
-    background: linear-gradient(180deg, #5C3317 0%, #8B5A2B 30%, #D2B48C 100%);
-    overflow-y: auto;
+  /* ========= SECTION LABELS ========= */
+  .section-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #9a4070;
+    margin: 10px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
   }
-  .barn-screen-header {
-    text-align: center; padding: 20px 0 8px;
-    color: #FFF8DC; font-size: 30px; font-weight: 900;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  .section-label::before,
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e890b0;
   }
-  #barn-list {
-    display: flex; flex-wrap: wrap; gap: 16px;
-    justify-content: center; padding: 10px 20px 100px;
-  }
-  .barn-empty-msg {
-    text-align: center; padding: 80px 20px;
-    color: #FFF8DC; font-size: 20px; font-weight: 600; opacity: 0.85;
-  }
-  .barn-back-btn {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: linear-gradient(135deg, #8B4513, #6B3410);
-    border: none; color: white; font-size: 18px; font-weight: 700;
-    padding: 12px 40px; border-radius: 50px; cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 60;
-  }
-  .barn-back-btn:hover { transform: translateX(-50%) scale(1.05); }
 
-  /* ========= PIG CARDS (barn) ========= */
-  .pig-card {
-    background: white; border-radius: 20px;
-    padding: 16px; width: 190px; text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-    border: 3px solid transparent; transition: transform 0.15s;
-    position: relative; overflow: visible;
-  }
-  .pig-card:hover { transform: scale(1.03); }
-  .pig-card.ready {
-    border-color: #e53935;
-    animation: card-pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes card-pulse {
-    0%, 100% { box-shadow: 0 4px 16px rgba(229,57,53,0.3); }
-    50% { box-shadow: 0 6px 28px rgba(229,57,53,0.7); }
-  }
-  .pig-card-pig {
-    height: 54px; display: flex; justify-content: center;
-    align-items: center; overflow: hidden; margin-bottom: 4px;
-  }
-  .pig-card-pig .pig-body-wrap { transform: scale(0.65); flex-shrink: 0; }
-  .pig-card-name { font-size: 17px; font-weight: 900; color: #333; margin: 2px 0; }
-  .pig-card-age { font-size: 12px; color: #888; margin-bottom: 8px; }
-  .age-bar-wrap {
-    background: #eee; border-radius: 8px; height: 12px;
-    overflow: hidden; margin-bottom: 8px;
-  }
-  .age-bar { height: 100%; border-radius: 8px; transition: width 0.5s; }
-  .pig-card-status { font-size: 13px; font-weight: 600; margin-bottom: 6px; min-height: 20px; }
-  .ready-badge {
-    background: #e53935; color: white;
-    font-size: 11px; font-weight: 700;
-    padding: 3px 10px; border-radius: 10px; display: inline-block;
-  }
-  .pig-card-feed-btn {
-    background: linear-gradient(135deg, #4CAF50, #388E3C);
-    border: none; color: white; font-size: 14px; font-weight: 700;
-    padding: 8px 16px; border-radius: 50px; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%; transition: transform 0.1s;
-  }
-  .pig-card-feed-btn:hover { transform: scale(1.05); }
-  .pig-card-cook-btn {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-    border: none; color: white; font-size: 14px; font-weight: 700;
-    padding: 8px 16px; border-radius: 50px; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15); width: 100%;
-    transition: transform 0.1s; margin-top: 6px;
-  }
-  .pig-card-cook-btn:hover { transform: scale(1.05); }
-
-  /* ========= TORNADO SHELTER (yard) ========= */
-  #shelter-btn {
-    position: absolute; bottom: 16%; left: 50%; transform: translateX(-50%);
-    display: none; cursor: pointer; z-index: 80; text-align: center;
-    animation: shelter-rise 0.6s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  #shelter-btn.visible { display: block; }
-  @keyframes shelter-rise {
-    from { transform: translateX(-50%) translateY(80px); opacity: 0; }
-    to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
-  }
-  .shelter-dome {
-    width: 120px; height: 80px;
-    background: linear-gradient(180deg, #607D8B, #455A64);
-    border-radius: 60px 60px 6px 6px;
+  /* ========= GRID ========= */
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 0 20px 40px;
     position: relative;
-    border: 4px solid #37474F;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.5),
-                0 0 0 4px rgba(255,220,0,0.5),
-                0 0 30px 8px rgba(255,220,0,0.3);
-    animation: shelter-glow 0.6s ease-in-out infinite alternate;
-  }
-  @keyframes shelter-glow {
-    from { box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,220,0,0.4), 0 0 20px 6px rgba(255,220,0,0.2); }
-    to   { box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,220,0,0.9), 0 0 40px 14px rgba(255,220,0,0.5); }
-  }
-  .shelter-stripe {
-    position: absolute; top: 14px; left: 0; right: 0;
-    height: 12px; background: repeating-linear-gradient(90deg, #FFD700 0px, #FFD700 12px, #455A64 12px, #455A64 24px);
-    opacity: 0.7;
-  }
-  .shelter-sign {
-    position: absolute; top: 32px; left: 50%; transform: translateX(-50%);
-    color: #FFD700; font-size: 10px; font-weight: 900; letter-spacing: 2px; white-space: nowrap;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-  }
-  .shelter-door {
-    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 34px; height: 50px;
-    background: #1a1a2e; border-radius: 17px 17px 0 0;
-    border: 3px solid #37474F;
-  }
-  .shelter-door::after {
-    content: ''; position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%,-50%);
-    width: 8px; height: 8px;
-    background: #FFD700; border-radius: 50%;
-    box-shadow: 0 0 6px #FFD700;
-  }
-  #shelter-label {
-    margin-top: 6px; background: rgba(0,0,0,0.75); color: #FFD700;
-    padding: 5px 16px; border-radius: 12px;
-    font-size: 14px; font-weight: 900; letter-spacing: 1px;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-    animation: label-pulse 0.5s ease-in-out infinite alternate;
-  }
-  @keyframes label-pulse {
-    from { opacity: 0.8; }
-    to   { opacity: 1; transform: scale(1.04); }
+    z-index: 1;
   }
 
-  .pig-happiness { font-size: 13px; letter-spacing: 1px; margin-bottom: 6px; }
-  .pig-care-btns { display: flex; gap: 6px; margin-top: 8px; }
-  .pig-care-btn {
-    flex: 1; padding: 8px 4px; border: none; border-radius: 12px;
-    font-size: 18px; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+  /* ========= GAME CARD ========= */
+  .game-card {
+    background: linear-gradient(145deg, #fff0f5, #ffe0ed);
+    border-radius: 18px;
+    padding: 20px 14px 16px;
+    text-align: center;
+    border: 2px solid #f0a0c0;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
   }
-  .pig-care-btn:hover:not(:disabled) { transform: scale(1.15); }
-  .pig-care-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .pig-care-btn.feed { background: #e8f5e9; }
-  .pig-care-btn.pet  { background: #fce4ec; }
-  .pig-care-btn.walk { background: #e3f2fd; }
-  .floating-heart {
-    position: absolute; pointer-events: none;
-    font-size: 22px; z-index: 200;
-    animation: heart-float 1.4s ease-out forwards;
+  .game-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+    pointer-events: none;
   }
-  @keyframes heart-float {
-    0%   { opacity: 1; transform: translateY(0) scale(0.8); }
-    100% { opacity: 0; transform: translateY(-70px) scale(1.2); }
+  .game-card.playable {
+    border-color: #ff6b9d;
+    background: linear-gradient(145deg, #fff5f8, #ffe8f0);
   }
-  .floating-walk {
-    position: absolute; pointer-events: none;
-    font-size: 20px; z-index: 200; bottom: 12px; left: 10%;
-    animation: walk-across 1.2s ease-in-out forwards;
+  .game-card.playable:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 16px 40px rgba(255, 100, 150, 0.4);
+    border-color: #ff3d7f;
   }
-  @keyframes walk-across {
-    0%   { opacity: 1; transform: translateX(0); }
-    100% { opacity: 0; transform: translateX(160px); }
+  .game-card.coming-soon {
+    opacity: 0.6;
+    cursor: default;
   }
+  .game-card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .card-emoji {
+    font-size: 52px;
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    transition: transform 0.2s;
+  }
+  .game-card.playable:hover .card-emoji {
+    transform: scale(1.15) rotate(-5deg);
+  }
+
+  .card-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #4a0a2a;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .player-badge {
+    display: inline-block;
+    background: rgba(0, 210, 211, 0.15);
+    color: #00d2d3;
+    border: 1px solid rgba(0, 210, 211, 0.3);
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .play-btn {
+    display: block;
+    width: 100%;
+    padding: 9px 0;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.15s, opacity 0.15s;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .play-btn.active {
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255, 107, 157, 0.4);
+  }
+  .play-btn.active:hover {
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+  .play-btn.inactive {
+    background: #e0c0d0;
+    color: #a06080;
+    cursor: not-allowed;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Playable card glow ring */
+  .game-card.playable::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43, #ffd32a, #00d2d3);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .game-card.playable:hover::after {
+    opacity: 0.5;
+  }
+
+  /* NEW badge */
+  .new-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ========= BOTTOM PADDING ========= */
+  .bottom-space { height: 20px; }
 </style>
 </head>
 <body>
 
-<!-- ========= HUB HOME BUTTON (always visible) ========= -->
-<a href="hub.html" id="hub-home-btn">🏠 Piggy World</a>
+<!-- Stars background -->
+<div class="stars" id="stars"></div>
 
-<!-- ========= MONEY HUD (always visible) ========= -->
-<div id="money-hud">
-  <div class="label">Money</div>
-  <div id="money-display">$0</div>
-  <div class="cashout-hint">Tap to cash out!</div>
-</div>
+<div style="position:relative;z-index:1">
+  <!-- Header -->
+  <div class="hub-header">
+    <div class="hub-title">🐷 PIGGY WORLD 🐷</div>
+    <div class="hub-subtitle">Choose your adventure</div>
+  </div>
 
-<!-- ========= CASH OUT POPUP ========= -->
-<div id="cashout-overlay">
-  <div class="cashout-box" id="cashout-main">
-    <div class="cashout-icon">💰</div>
-    <h2>Cash Out</h2>
-    <div class="cashout-amount" id="cashout-amount">$0</div>
-    <div class="cashout-label">Choose how to get paid:</div>
-    <div class="cashout-methods">
-      <div class="cashout-method" data-method="PayPal">💳 PayPal</div>
-      <div class="cashout-method" data-method="Venmo">📱 Venmo</div>
-      <div class="cashout-method" data-method="Cash App">💵 Cash App</div>
+  <!-- PLAYABLE GAMES -->
+  <div class="section-label">🎮 Play Now</div>
+  <div class="games-grid">
+
+    <!-- Game 0: The OG -->
+    <div class="game-card playable">
+      <span class="new-badge">ORIGINAL</span>
+      <span class="card-emoji">🍳</span>
+      <div class="card-name">Piggies to Bacon (Classic)</div>
+      <div class="player-badge">👤 The very first one!</div>
+      <a class="play-btn active" href="classic.html">▶ PLAY</a>
     </div>
-    <div style="margin-top:10px;padding-top:10px;border-top:2px dashed #e0e0e0;">
-      <div class="cashout-method" id="double-money" style="background:#e8f5e9;border-color:#4CAF50;color:#2e7d32;">🤑 Double Your Money!</div>
+
+    <!-- Game 1: Piggies to Bacon -->
+    <div class="game-card playable">
+      <span class="new-badge">ORIGINAL</span>
+      <span class="card-emoji">🐷</span>
+      <div class="card-name">Disaster Piggies</div>
+      <div class="player-badge">👤 Frankie's #1</div>
+      <a class="play-btn active" href="disaster-piggies.html">▶ PLAY</a>
     </div>
-    <button class="cashout-cancel" id="cashout-cancel">Never mind</button>
-  </div>
-  <div class="cashout-success" id="cashout-success">
-    <div class="check">✅</div>
-    <h2>Payment Sent!</h2>
-    <div class="success-amount" id="success-amount">$0</div>
-    <div class="success-label" id="success-label">Sent to your PayPal</div>
-    <button class="cashout-method" id="cashout-done">Awesome!</button>
-  </div>
-</div>
-<div id="bacon-hud">
-  <div class="label">Bacon</div>
-  <div id="bacon-display">0 🥓</div>
-</div>
-<div id="message"></div>
 
-<!-- ========= DISASTER WARNING (fixed, all screens) ========= -->
-<div id="disaster-warning">
-  <div class="disaster-warn-box">
-    <div class="dw-icon" id="dw-icon">🌪️</div>
-    <div class="dw-name" id="dw-name">TORNADO WARNING!</div>
-    <div class="dw-sub">⚠️ Get ALL pigs to the barn! ⚠️</div>
-    <div class="dw-count" id="dw-count">30</div>
-  </div>
-</div>
-
-<!-- ========= DISASTER STRIKE OVERLAY ========= -->
-<div id="disaster-overlay">
-  <div class="ds-icon"   id="ds-icon">🌪️</div>
-  <div class="ds-title"  id="ds-title">TORNADO STRIKES!</div>
-  <div class="ds-damage" id="ds-damage"></div>
-  <button class="ds-ok-btn" id="disaster-ok">OK, rebuild...</button>
-</div>
-
-<!-- ========= YARD SCREEN ========= -->
-<div class="screen active" id="yard">
-  <div class="sun"><div class="sun-ray"></div></div>
-  <div id="yard-piggies"></div>
-  <!-- Tornado shelter (only visible during disaster warning) -->
-  <div id="shelter-btn">
-    <div class="shelter-dome">
-      <div class="shelter-stripe"></div>
-      <div class="shelter-sign">SHELTER</div>
-      <div class="shelter-door"></div>
+    <!-- Game 2: Piggy Catch -->
+    <div class="game-card playable">
+      <span class="new-badge">NEW</span>
+      <span class="card-emoji">🧺</span>
+      <div class="card-name">Piggy Catch</div>
+      <div class="player-badge">👤 Catch 'em all!</div>
+      <a class="play-btn active" href="piggy-catch.html">▶ PLAY</a>
     </div>
-    <div id="shelter-label">🚨 Take Shelter!</div>
-  </div>
-  <div id="barn-btn">🐖</div>
-  <div id="barn-hud-label">🐷 Barn</div>
-  <div id="house-btn">🏠</div>
-  <div id="house-label">Kitchen</div>
-  <button id="test-disaster-btn" onclick="if(disasterState==='idle'){triggerDisasterWarning(disasters[Math.floor(Math.random()*disasters.length)]);}" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:500;background:#c00;color:white;font-size:16px;font-weight:900;padding:10px 24px;border:none;border-radius:50px;cursor:pointer;opacity:0.75;letter-spacing:1px;">⚡ Disaster</button>
-  <div id="piggy-hint">Chase the piggies! Click one to catch it, then bring it to the kitchen!</div>
-</div>
 
-<!-- ========= KITCHEN SCREEN ========= -->
-<div class="screen" id="kitchen">
-  <div class="kitchen-floor"></div>
-  <div class="kitchen-counter"><div class="kitchen-counter-top"></div></div>
-  <div id="frying-pan">🍳</div>
-  <div id="cook-label">Click the pan to cook!</div>
-  <div class="kitchen-register">🧾</div>
-  <div class="customer-table" id="customer-table"></div>
-  <div class="kitchen-btn-row">
-    <button class="kitchen-btn" id="back-to-yard">Back Outside</button>
-    <button class="kitchen-btn" id="sell-btn" disabled>Sell Bacon</button>
-    <button class="kitchen-btn" id="go-shop">Shop 🛒</button>
-  </div>
-</div>
+    <!-- Game 3: Oink Memory -->
+    <div class="game-card playable">
+      <span class="new-badge">NEW</span>
+      <span class="card-emoji">🃏</span>
+      <div class="card-name">Oink Memory</div>
+      <div class="player-badge">👤 Match the pigs!</div>
+      <a class="play-btn active" href="oink-memory.html">▶ PLAY</a>
+    </div>
 
-<!-- ========= SHOP SCREEN ========= -->
-<div class="screen" id="shop">
-  <div class="shop-title">🛒 Piggy Shop</div>
-
-  <div class="shop-section">
-    <h3>🐷 Pig Skins</h3>
-    <div class="shop-items" id="pig-skins"></div>
   </div>
 
-  <div class="shop-section">
-    <h3>🍳 Frying Pan Skins</h3>
-    <div class="shop-items" id="pan-skins"></div>
+  <!-- COMING SOON -->
+  <div class="section-label">🔒 Coming Soon</div>
+  <div class="games-grid">
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🏎️</span><div class="card-name">Pig Racer</div><div class="player-badge">👤 Race your pig!</div><a class="play-btn active" href="pig-racer.html">▶ PLAY</a></div>
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🏗️</span><div class="card-name">Pig Tower</div><div class="player-badge">👤 Stack 'em up!</div><a class="play-btn active" href="pig-tower.html">▶ PLAY</a></div>
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🎨</span><div class="card-name">Piggy Painter</div><div class="player-badge">👤 Paint a pig!</div><a class="play-btn active" href="piggy-painter.html">▶ PLAY</a></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎯</span><div class="card-name">Oink Quiz</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">💦</span><div class="card-name">Mud Splash</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🦘</span><div class="card-name">Pig Jump</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👨‍🍳</span><div class="card-name">Bacon Chef</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🌾</span><div class="card-name">Pig Farm Tycoon</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎣</span><div class="card-name">Piggy Fishing</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🫧</span><div class="card-name">Pig Bubble Pop</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎤</span><div class="card-name">Oink Karaoke</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🌀</span><div class="card-name">Pig Maze</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🐺</span><div class="card-name">Pig vs Wolf</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🎵</span><div class="card-name">Oink Orchestra</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🏁</span><div class="card-name">Piggy Kart Racing</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🔍</span><div class="card-name">Pig Detective</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🥇</span><div class="card-name">Mud Olympics</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🥁</span><div class="card-name">Trotter Tapper</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🍖</span><div class="card-name">Pork Chop Chef</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🏝️</span><div class="card-name">Pig Island</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">⚔️</span><div class="card-name">Bacon Battle</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👃</span><div class="card-name">Snout Sorting</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">📡</span><div class="card-name">Ham Radio Tower</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">👗</span><div class="card-name">Piggy Dress Up</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card coming-soon"><span class="card-emoji">🧩</span><div class="card-name">Pig Puzzle</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
   </div>
 
-  <button class="shop-back" id="shop-back">Back to Kitchen</button>
-</div>
-
-<!-- ========= BARN SCREEN ========= -->
-<div class="screen" id="barn">
-  <div class="barn-screen-header">🐷 My Barn</div>
-  <div id="barn-list"></div>
-  <div id="barn-empty" class="barn-empty-msg">No piggies yet! Catch some and send them here! 🌾</div>
-  <button class="barn-back-btn" id="barn-back">← Back Outside</button>
+  <div class="bottom-space"></div>
 </div>
 
 <script>
-// ========= SOUNDS =========
-// AudioContext MUST be created inside a user gesture (click/touch) or browsers block it.
-let audioCtx = null;
-let soundReady = false;
-
-// This runs on the very first click/touch anywhere on the page
-function initSound() {
-  if (soundReady) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = audioCtx.createBuffer(1, 1, 22050);
-    const src = audioCtx.createBufferSource();
-    src.buffer = buf;
-    src.connect(audioCtx.destination);
-    src.start(0);
-    soundReady = true;
-  } catch(e) {}
-}
-document.addEventListener('click', initSound, { capture: true });
-document.addEventListener('touchstart', initSound, { capture: true });
-
-function playSizzle() {
-  if (!soundReady) return;
-  try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const duration = 1.2;
-    const bufferSize = audioCtx.sampleRate * duration;
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-    }
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 3000;
-    filter.Q.value = 0.5;
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-    source.start();
-  } catch(e) {}
-}
-
-const oinkFiles = ['pig-squeal-short-low.mp3', 'pig-squeal2-low.mp3', 'pig-squeal3-low.mp3'];
-
-function playOink() {
-  const snd = new Audio(oinkFiles[Math.floor(Math.random() * oinkFiles.length)]);
-  snd.volume = 0.25;
-  snd.play().catch(() => {});
-}
-
-function playScaredOink() {
-  playOink();
-  setTimeout(() => playOink(), 300);
-}
-
-const pigPhrases = [
-  "No, don't pick me up!",
-  "Hey! Put me down!",
-  "Nooo! Not the kitchen!",
-  "Oink oink! Let me go!",
-  "I don't wanna be bacon!",
-];
-
-// ========= GAME STATE =========
-let money = 0;
-let baconCount = 0;
-let currentScreen = 'yard';
-
-// ========= MULTIPLE PIGGIES =========
-let yardPiggies = [];      // array of piggy objects
-let pickedUpPiggies = [];  // all the piggies we're carrying
-let piggiesInKitchen = 0;  // how many piggies are ready to cook
-
-// ========= BARN STATE =========
-const barnPigNames = ['Hamlet','Wilbur','Peppa','Rosie','Pinky',
-  'Waffles','Cupcake','Nugget','Truffle','Peanut',
-  'Biscuit','Pudding','Butterscotch','Snuggles','Napoleon'];
-let barnPiggies = JSON.parse(localStorage.getItem('barnPiggies') || '[]');
-let barnRefreshCounter = 0;
-
-function saveBarnPiggies() {
-  localStorage.setItem('barnPiggies', JSON.stringify(barnPiggies));
-}
-
-// ========= GAME SAVE / LOAD =========
-function saveGameState() {
-  localStorage.setItem('gameState', JSON.stringify({
-    money,
-    baconCount,
-    ownedPigSkins: pigSkins.filter(s => s.owned).map(s => s.id),
-    ownedPanSkins: panSkins.filter(s => s.owned).map(s => s.id),
-    currentPigSkinId: currentPigSkin.id,
-    currentPanSkinId: currentPanSkin.id,
-  }));
-}
-function loadGameState() {
-  const saved = JSON.parse(localStorage.getItem('gameState') || 'null');
-  if (!saved) return;
-  money = saved.money || 0;
-  baconCount = saved.baconCount || 0;
-  if (saved.ownedPigSkins) pigSkins.forEach(s => { if (saved.ownedPigSkins.includes(s.id)) s.owned = true; });
-  if (saved.ownedPanSkins) panSkins.forEach(s => { if (saved.ownedPanSkins.includes(s.id)) s.owned = true; });
-  if (saved.currentPigSkinId) currentPigSkin = pigSkins.find(s => s.id === saved.currentPigSkinId) || pigSkins[0];
-  if (saved.currentPanSkinId) currentPanSkin = panSkins.find(s => s.id === saved.currentPanSkinId) || panSkins[0];
-}
-function randomPigName() {
-  return barnPigNames[Math.floor(Math.random() * barnPigNames.length)];
-}
-function getAge(pig) {
-  // 1 real day = 100 age (max)
-  return Math.min(100, (Date.now() - pig.birthTime) / 1000 * (100 / 86400));
-}
-function adoptToBarn(pig) {
-  const now = Date.now();
-  barnPiggies.push({
-    id: now + Math.random(),
-    name: randomPigName(),
-    birthTime: now,
-    lastFed: now,
-    lastPetted: now,
-    lastWalked: now,
-    skinId: currentPigSkin.id,
-    skinColor: currentPigSkin.color,
-    skinNose: currentPigSkin.nose,
-    skinNostril: currentPigSkin.nostril,
-    skinEar: currentPigSkin.ear,
-  });
-  saveBarnPiggies();
-}
-function renderBarnPiggies() {
-  const list = document.getElementById('barn-list');
-  const emptyMsg = document.getElementById('barn-empty');
-  if (barnPiggies.length === 0) {
-    list.innerHTML = '';
-    emptyMsg.style.display = '';
-    return;
+  // Generate twinkling stars
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.setProperty('--d', (2 + Math.random() * 4).toFixed(1) + 's');
+    s.style.animationDelay = (Math.random() * 4).toFixed(1) + 's';
+    s.style.width = s.style.height = (1 + Math.random() * 2).toFixed(1) + 'px';
+    starsEl.appendChild(s);
   }
-  emptyMsg.style.display = 'none';
-  list.innerHTML = '';
-  barnPiggies.forEach(pig => list.appendChild(createPigCard(pig)));
-}
-function createPigCard(pig) {
-  const age = getAge(pig);
-  const isReady = age >= 100;
-  const isHungry = (Date.now() - pig.lastFed) / 3600000 >= 2;
-  const happiness = getHappiness(pig);
-  let barColor = age >= 85 ? '#e53935' : age >= 60 ? '#FF9800' : '#4CAF50';
-  let statusHtml = isReady
-    ? '<span class="ready-badge">Ready to Cook! 🔥</span>'
-    : isHungry ? '🍽️ Hungry!' : '&nbsp;';
-  const card = document.createElement('div');
-  card.className = 'pig-card' + (isReady ? ' ready' : '');
-  card.dataset.pigId = pig.id;
-  const rainbowClass = pig.skinId === 'rainbow' ? ' rainbow-skin' : '';
-  card.innerHTML = `
-    <div class="pig-card-pig${rainbowClass}" style="--pig-color:${pig.skinColor};--pig-nose:${pig.skinNose};--pig-nostril:${pig.skinNostril};--pig-ear:${pig.skinEar};">${createPigHTML()}</div>
-    <div class="pig-card-name">${pig.name} ${getHappinessEmoji(happiness)}</div>
-    <div class="pig-happiness">${getHappinessHearts(happiness)}</div>
-    <div class="pig-card-age">Age ${Math.floor(age)} / 100</div>
-    <div class="age-bar-wrap"><div class="age-bar" style="width:${age}%;background:${barColor};"></div></div>
-    <div class="pig-card-status">${statusHtml}</div>
-  `;
-  if (isReady) {
-    const btn = document.createElement('button');
-    btn.className = 'pig-card-cook-btn';
-    btn.textContent = 'Cook Now 🍳';
-    btn.addEventListener('click', () => cookBarnPig(pig.id));
-    card.appendChild(btn);
-  } else {
-    const row = document.createElement('div');
-    row.className = 'pig-care-btns';
-    const feedBtn = document.createElement('button');
-    feedBtn.className = 'pig-care-btn feed';
-    feedBtn.title = 'Feed'; feedBtn.textContent = '🌽';
-    feedBtn.addEventListener('click', () => feedBarnPig(pig.id, feedBtn));
-    const petBtn = document.createElement('button');
-    petBtn.className = 'pig-care-btn pet';
-    petBtn.title = 'Pet'; petBtn.textContent = '💕';
-    petBtn.addEventListener('click', () => petPig(pig.id, petBtn));
-    const walkBtn = document.createElement('button');
-    walkBtn.className = 'pig-care-btn walk';
-    walkBtn.title = 'Walk'; walkBtn.textContent = '🦮';
-    walkBtn.addEventListener('click', () => walkPig(pig.id, walkBtn));
-    row.appendChild(feedBtn);
-    row.appendChild(petBtn);
-    row.appendChild(walkBtn);
-    card.appendChild(row);
-  }
-  return card;
-}
-function feedBarnPig(id, btn) {
-  const pig = barnPiggies.find(p => String(p.id) === String(id));
-  if (!pig) return;
-  pig.lastFed = Date.now();
-  saveBarnPiggies();
-  if (btn) {
-    btn.textContent = 'Fed! 🐷';
-    btn.disabled = true;
-    setTimeout(() => { btn.textContent = '🌽 Feed'; btn.disabled = false; }, 1500);
-  }
-}
-function cookBarnPig(id) {
-  const idx = barnPiggies.findIndex(p => String(p.id) === String(id));
-  if (idx === -1) return;
-  const name = barnPiggies[idx].name;
-  barnPiggies.splice(idx, 1);
-  saveBarnPiggies();
-  piggiesInKitchen++;
-  showMessage(`Time to cook ${name}! 🍳`);
-  showScreen('kitchen');
-}
-function getHappiness(pig) {
-  const now = Date.now();
-  const hrsPetted  = (now - (pig.lastPetted  || pig.birthTime)) / 3600000;
-  const hrsWalked  = (now - (pig.lastWalked  || pig.birthTime)) / 3600000;
-  const hrsFed     = (now - pig.lastFed) / 3600000;
-  let h = 100;
-  h -= Math.min(50, hrsPetted * 8);
-  h -= Math.min(30, hrsWalked * 5);
-  h -= Math.min(20, hrsFed * 10);
-  return Math.max(0, Math.round(h));
-}
-function getHappinessHearts(h) {
-  const n = Math.round(h / 20);
-  return '❤️'.repeat(n) + '🖤'.repeat(5 - n);
-}
-function getHappinessEmoji(h) {
-  if (h >= 80) return '😍';
-  if (h >= 60) return '😊';
-  if (h >= 40) return '😐';
-  if (h >= 20) return '😕';
-  return '😢';
-}
-function showFloatingHearts(cardEl) {
-  const emojis = ['❤️','💕','💖','💗','💓'];
-  for (let i = 0; i < 5; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'floating-heart';
-      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-      el.style.left = (15 + Math.random() * 60) + '%';
-      el.style.top = (20 + Math.random() * 30) + '%';
-      cardEl.appendChild(el);
-      setTimeout(() => el.remove(), 1400);
-    }, i * 180);
-  }
-}
-function showWalkAnimation(cardEl) {
-  const el = document.createElement('div');
-  el.className = 'floating-walk';
-  el.textContent = '🐷💨';
-  cardEl.appendChild(el);
-  setTimeout(() => el.remove(), 1200);
-}
-function petPig(id, btn) {
-  const pig = barnPiggies.find(p => String(p.id) === String(id));
-  if (!pig) return;
-  const cooldown = 30 * 60 * 1000;
-  const wait = cooldown - (Date.now() - (pig.lastPetted || 0));
-  if (wait > 0) {
-    showMessage(`Wait ${Math.ceil(wait / 60000)} more min to pet ${pig.name}!`);
-    return;
-  }
-  pig.lastPetted = Date.now();
-  saveBarnPiggies();
-  const card = document.querySelector(`[data-pig-id="${id}"]`);
-  if (card) showFloatingHearts(card);
-  if (btn) { btn.textContent = '💕'; btn.disabled = true; setTimeout(() => { btn.textContent = '💕'; btn.disabled = false; }, 2000); }
-  showMessage(`${pig.name} loves the attention! 💕`);
-}
-function walkPig(id, btn) {
-  const pig = barnPiggies.find(p => String(p.id) === String(id));
-  if (!pig) return;
-  const cooldown = 60 * 60 * 1000;
-  const wait = cooldown - (Date.now() - (pig.lastWalked || 0));
-  if (wait > 0) {
-    showMessage(`Wait ${Math.ceil(wait / 60000)} more min to walk ${pig.name}!`);
-    return;
-  }
-  pig.lastWalked = Date.now();
-  saveBarnPiggies();
-  const card = document.querySelector(`[data-pig-id="${id}"]`);
-  if (card) showWalkAnimation(card);
-  if (btn) { btn.textContent = '🦮'; btn.disabled = true; setTimeout(() => { btn.textContent = '🦮'; btn.disabled = false; }, 2000); }
-  showMessage(`${pig.name} is going for a walk! 🦮`);
-}
-function refreshBarnCards() {
-  barnPiggies.forEach(pig => {
-    const card = document.querySelector(`[data-pig-id="${pig.id}"]`);
-    if (!card) return;
-    const age = getAge(pig);
-    const isReady = age >= 100;
-    const isHungry = (Date.now() - pig.lastFed) / 3600000 >= 2;
-    const happiness = getHappiness(pig);
-    const barColor = age >= 85 ? '#e53935' : age >= 60 ? '#FF9800' : '#4CAF50';
-    const bar = card.querySelector('.age-bar');
-    if (bar) { bar.style.width = age + '%'; bar.style.background = barColor; }
-    const ageText = card.querySelector('.pig-card-age');
-    if (ageText) ageText.textContent = Math.floor(age) + ' / 100 hours';
-    const hearts = card.querySelector('.pig-happiness');
-    if (hearts) hearts.textContent = getHappinessHearts(happiness);
-    const nameEl = card.querySelector('.pig-card-name');
-    if (nameEl) nameEl.textContent = pig.name + ' ' + getHappinessEmoji(happiness);
-    const status = card.querySelector('.pig-card-status');
-    if (status) {
-      status.innerHTML = isReady
-        ? '<span class="ready-badge">Ready to Cook! 🔥</span>'
-        : isHungry ? '🍽️ Hungry!' : '&nbsp;';
-    }
-    card.className = 'pig-card' + (isReady ? ' ready' : '');
-    if (isReady && !card.querySelector('.pig-card-cook-btn')) {
-      const careRow = card.querySelector('.pig-care-btns');
-      if (careRow) careRow.remove();
-      const cookBtn = document.createElement('button');
-      cookBtn.className = 'pig-card-cook-btn';
-      cookBtn.textContent = 'Cook Now 🍳';
-      cookBtn.addEventListener('click', () => cookBarnPig(pig.id));
-      card.appendChild(cookBtn);
-    }
-  });
-}
 
-function createPigHTML() {
-  return `
-    <div class="pig-body-wrap">
-      <div class="pig-tail"></div>
-      <div class="pig-body"></div>
-      <div class="pig-head">
-        <div class="pig-ear right-ear"></div>
-        <div class="pig-ear left-ear"></div>
-        <div class="pig-eye right-eye"></div>
-        <div class="pig-eye left-eye"></div>
-        <div class="pig-nose">
-          <div class="pig-nostril left"></div>
-          <div class="pig-nostril right"></div>
-        </div>
-      </div>
-      <div class="pig-legs">
-        <div class="pig-leg leg-1"><div class="pig-hoof"></div></div>
-        <div class="pig-leg leg-2"><div class="pig-hoof"></div></div>
-        <div class="pig-leg leg-3"><div class="pig-hoof"></div></div>
-        <div class="pig-leg leg-4"><div class="pig-hoof"></div></div>
-      </div>
-    </div>
-  `;
-}
-
-function applyPigSkinToElement(el) {
-  el.style.setProperty('--pig-color', currentPigSkin.color);
-  el.style.setProperty('--pig-nose', currentPigSkin.nose);
-  el.style.setProperty('--pig-nostril', currentPigSkin.nostril);
-  el.style.setProperty('--pig-ear', currentPigSkin.ear);
-  if (currentPigSkin.id === 'rainbow') {
-    el.classList.add('rainbow-skin');
-  } else {
-    el.classList.remove('rainbow-skin');
-  }
-}
-
-function spawnYardPiggies(count) {
-  const container = document.getElementById('yard-piggies');
-  container.innerHTML = '';
-  yardPiggies = [];
-  for (let i = 0; i < count; i++) {
+  // Floating piggy snouts
+  const snouts = ['🐽','🐷','🐖','🐷','🐽','🐷'];
+  snouts.forEach((emoji, i) => {
     const el = document.createElement('div');
-    el.className = 'yard-piggy';
-    el.innerHTML = createPigHTML();
-    applyPigSkinToElement(el);
-    container.appendChild(el);
-    yardPiggies.push({
-      el: el,
-      x: 80 + Math.random() * (window.innerWidth - 160),
-      y: window.innerHeight * 0.56 + Math.random() * (window.innerHeight * 0.28),
-      vx: 0, vy: 0,
-      wanderTimer: Math.random() * 80,
-      wanderDirX: 0, wanderDirY: 0,
-      eatingTimer: 0, isEating: false,
-      moving: false,
-      oinkTimer: 60 + Math.random() * 200,
-      winkTimer: 180 + Math.random() * 400,
-    });
-  }
-}
-
-// Skins data
-const pigSkins = [
-  { id: 'classic', name: 'Classic Pink', color: '#f8a0b0', nose: '#e08090', nostril: '#c06070', ear: '#e89aa8', price: 0, owned: true },
-  { id: 'golden', name: 'Golden Pig', color: '#ffd700', nose: '#daa520', nostril: '#b8860b', ear: '#f0c040', price: 20 },
-  { id: 'purple', name: 'Purple Pig', color: '#ce93d8', nose: '#ab47bc', nostril: '#8e24aa', ear: '#ba68c8', price: 30 },
-  { id: 'blue', name: 'Blue Pig', color: '#90caf9', nose: '#42a5f5', nostril: '#1e88e5', ear: '#64b5f6', price: 30 },
-  { id: 'mint', name: 'Mint Pig', color: '#a5d6a7', nose: '#66bb6a', nostril: '#43a047', ear: '#81c784', price: 40 },
-  { id: 'red', name: 'Fire Pig', color: '#ef9a9a', nose: '#e53935', nostril: '#c62828', ear: '#ef5350', price: 50 },
-  { id: 'black', name: 'Midnight Pig', color: '#616161', nose: '#424242', nostril: '#212121', ear: '#757575', price: 60 },
-  { id: 'rainbow', name: 'Rainbow Pig', color: '#ffb3ba', nose: '#ff9aa2', nostril: '#ff6b6b', ear: '#ffd1dc', price: 75 },
-  { id: 'sky', name: 'Sky Pig', color: '#b3e5fc', nose: '#4fc3f7', nostril: '#0288d1', ear: '#81d4fa', price: 45 },
-  { id: 'peach', name: 'Peachy Pig', color: '#ffccb6', nose: '#ffa07a', nostril: '#e8724a', ear: '#ffb89a', price: 35 },
-  { id: 'lilac', name: 'Lilac Pig', color: '#e8d5f5', nose: '#c39bd3', nostril: '#9b59b6', ear: '#d7bde2', price: 40 },
-  { id: 'coral', name: 'Coral Pig', color: '#ff8a80', nose: '#ff5252', nostril: '#d50000', ear: '#ff6e6e', price: 55 },
-];
-
-const panSkins = [
-  { id: 'classic', name: 'Classic Pan', emoji: '🍳', price: 0, owned: true },
-  { id: 'wok', name: 'Wok', emoji: '🥘', price: 15 },
-  { id: 'pot', name: 'Magic Pot', emoji: '🍲', price: 25 },
-  { id: 'fire', name: 'Fire Grill', emoji: '🔥', price: 35 },
-  { id: 'sparkle', name: 'Sparkle Pan', emoji: '✨', price: 50 },
-  { id: 'taco', name: 'Taco Shell', emoji: '🌮', price: 30 },
-  { id: 'pizza', name: 'Pizza Oven', emoji: '🍕', price: 40 },
-  { id: 'bento', name: 'Bento Box', emoji: '🍱', price: 45 },
-  { id: 'bbq', name: 'BBQ Grill', emoji: '🍖', price: 55 },
-  { id: 'rainbow_pan', name: 'Rainbow Pan', emoji: '🌈', price: 70 },
-];
-
-let currentPigSkin = pigSkins[0];
-let currentPanSkin = panSkins[0];
-
-loadGameState(); // restore money, bacon, owned skins from previous session
-
-// ========= DOM =========
-const moneyDisplay = document.getElementById('money-display');
-const baconDisplay = document.getElementById('bacon-display');
-const fryingPan = document.getElementById('frying-pan');
-const messageEl = document.getElementById('message');
-
-let mouseX = window.innerWidth / 2;
-let mouseY = window.innerHeight / 2;
-
-// ========= SCREENS =========
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(name).classList.add('active');
-  currentScreen = name;
-
-  if (name === 'yard') {
-    piggiesInKitchen = 0;
-    pickedUpPiggies = [];
-    spawnYardPiggies(4); // 4 piggies to chase!
-  } else if (name === 'kitchen') {
-    if (pickedUpPiggies.length > 0) {
-      piggiesInKitchen += pickedUpPiggies.length;
-      pickedUpPiggies = [];
-    }
-    spawnCustomers();
-  } else if (name === 'barn') {
-    renderBarnPiggies();
-  }
-  updateCookLabel();
-}
-
-function showMessage(text) {
-  messageEl.textContent = text;
-  messageEl.classList.add('show');
-  setTimeout(() => messageEl.classList.remove('show'), 1500);
-}
-
-// ========= YARD =========
-document.addEventListener('mousemove', (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-});
-
-document.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-  mouseX = e.touches[0].clientX;
-  mouseY = e.touches[0].clientY;
-}, { passive: false });
-
-// Click anywhere on the yard — pick up the closest piggy (can carry multiple!)
-document.getElementById('yard').addEventListener('click', (e) => {
-  if (currentScreen !== 'yard') return;
-
-  // Find the closest FREE piggy to the click (not already picked up)
-  let closest = null;
-  let closestDist = Infinity;
-  for (const pig of yardPiggies) {
-    if (pickedUpPiggies.includes(pig)) continue; // already holding this one
-    const d = Math.hypot(e.clientX - pig.x, e.clientY - pig.y);
-    if (d < closestDist) { closestDist = d; closest = pig; }
-  }
-
-  if (closest && closestDist < 80) {
-    pickedUpPiggies.push(closest);
-    closest.el.classList.add('picked-up');
-    playScaredOink();
-    const phrase = pigPhrases[Math.floor(Math.random() * pigPhrases.length)];
-    const count = pickedUpPiggies.length;
-    showMessage(count === 1 ? phrase : count + ' piggies! Go to the kitchen!');
-  }
-});
-
-// House button (send to kitchen)
-document.getElementById('house-btn').addEventListener('click', () => {
-  if (pickedUpPiggies.length === 0) {
-    showMessage('Catch a piggy first!');
-    return;
-  }
-  showScreen('kitchen');
-});
-document.getElementById('house-label').addEventListener('click', () => {
-  document.getElementById('house-btn').click();
-});
-
-// Barn button — send pigs to barn if holding any, otherwise open barn
-document.getElementById('barn-btn').addEventListener('click', () => {
-  if (pickedUpPiggies.length > 0) {
-    pickedUpPiggies.forEach(pig => adoptToBarn(pig));
-    const count = pickedUpPiggies.length;
-    pickedUpPiggies = [];
-    showMessage(count === 1 ? 'Piggy moved to the barn! 🐷' : count + ' piggies moved to the barn! 🐷');
-  }
-  showScreen('barn');
-});
-document.getElementById('barn-hud-label').addEventListener('click', () => {
-  document.getElementById('barn-btn').click();
-});
-
-// Barn back button
-document.getElementById('barn-back').addEventListener('click', () => showScreen('yard'));
-
-// ========= KITCHEN =========
-function updateCookLabel() {
-  const label = document.getElementById('cook-label');
-  if (piggiesInKitchen > 0) {
-    label.textContent = piggiesInKitchen === 1 ? 'Click the pan to cook!' : piggiesInKitchen + ' piggies ready to cook!';
-  } else {
-    label.textContent = 'Bring a piggy here first!';
-  }
-  const sb = document.getElementById('sell-btn');
-  sb.disabled = baconCount === 0;
-  sb.textContent = baconCount > 0 ? `Sell ${baconCount} Bacon ($${baconCount * 5})` : 'Sell Bacon';
-}
-
-fryingPan.addEventListener('click', () => {
-  if (piggiesInKitchen <= 0) {
-    showMessage('Go catch a piggy first!');
-    return;
-  }
-
-  playSizzle();
-  fryingPan.classList.remove('cooking');
-  void fryingPan.offsetWidth;
-  fryingPan.classList.add('cooking');
-
-  const bacon = document.createElement('div');
-  bacon.className = 'bacon-pop';
-  bacon.textContent = '🥓';
-  const panRect = fryingPan.getBoundingClientRect();
-  bacon.style.left = (panRect.left + panRect.width / 2 - 20) + 'px';
-  bacon.style.top = (panRect.top - 50) + 'px';
-  document.body.appendChild(bacon);
-  setTimeout(() => bacon.remove(), 1000);
-
-  baconCount++;
-  piggiesInKitchen--;
-  updateHUD();
-  updateCookLabel();
-  showMessage(piggiesInKitchen > 0 ? 'Bacon made! ' + piggiesInKitchen + ' piggies left!' : 'Bacon made! 🥓');
-});
-
-// ========= CUSTOMERS =========
-const personStyles = [
-  { skin: '#FDBCB4', hair: '#4a2c0a', shirt: '#e53935', pants: '#1565C0', shoe: '#333' },
-  { skin: '#D2956A', hair: '#1a1a1a', shirt: '#43A047', pants: '#37474F', shoe: '#222' },
-  { skin: '#F5D0A9', hair: '#c6a050', shirt: '#7B1FA2', pants: '#455A64', shoe: '#4a3020' },
-  { skin: '#8D5524', hair: '#0d0d0d', shirt: '#FB8C00', pants: '#263238', shoe: '#1a1a1a' },
-  { skin: '#FDBCB4', hair: '#b03020', shirt: '#1E88E5', pants: '#4E342E', shoe: '#333' },
-  { skin: '#C68642', hair: '#2d1a0e', shirt: '#EC407A', pants: '#37474F', shoe: '#222' },
-  { skin: '#F5D0A9', hair: '#8B4513', shirt: '#00ACC1', pants: '#3E2723', shoe: '#1a1a1a' },
-  { skin: '#FDBCB4', hair: '#1a1a1a', shirt: '#FFB300', pants: '#1565C0', shoe: '#333' },
-];
-const thankYouPhrases = [
-  'Thank you!', 'Yum! Thanks!', 'Delicious bacon!', 'Mmm, so good!',
-  'Best bacon ever!', 'Thank you so much!', 'Wow, amazing!', 'I love it! Thanks!',
-];
-const customerTable = document.getElementById('customer-table');
-
-function makePerson(style) {
-  return `
-    <div class="person-body">
-      <div class="person-hair" style="background:${style.hair}"></div>
-      <div class="person-head" style="background:${style.skin}">
-        <div class="person-eyes"><div class="person-eye"></div><div class="person-eye"></div></div>
-        <div class="person-mouth"></div>
-      </div>
-      <div class="person-arm left-arm" style="background:${style.skin}"></div>
-      <div class="person-arm right-arm" style="background:${style.skin}"></div>
-      <div class="person-torso" style="background:${style.shirt}"></div>
-      <div class="person-legs">
-        <div class="person-leg" style="background:${style.pants};position:relative"><div class="person-shoe" style="background:${style.shoe}"></div></div>
-        <div class="person-leg" style="background:${style.pants};position:relative"><div class="person-shoe" style="background:${style.shoe}"></div></div>
-      </div>
-    </div>
-  `;
-}
-
-function spawnCustomers() {
-  customerTable.innerHTML = '';
-  const count = 4 + Math.floor(Math.random() * 3);
-  const used = [];
-  for (let i = 0; i < count; i++) {
-    let idx;
-    do { idx = Math.floor(Math.random() * personStyles.length); } while (used.includes(idx));
-    used.push(idx);
-    const style = personStyles[idx];
-    const div = document.createElement('div');
-    div.className = 'customer waiting';
-    div.innerHTML = `
-      <div class="speech"></div>
-      ${makePerson(style)}
-    `;
-    div.dataset.styleIdx = idx;
-    div.addEventListener('click', () => serveBacon(div));
-    customerTable.appendChild(div);
-  }
-}
-
-function serveBacon(customerEl) {
-  if (baconCount <= 0) {
-    showMessage('Cook some bacon first!');
-    return;
-  }
-
-  baconCount--;
-  const earned = 5;
-  money += earned;
-
-  customerEl.classList.remove('waiting');
-  customerEl.classList.add('happy');
-  const speech = customerEl.querySelector('.speech');
-  const phrase = thankYouPhrases[Math.floor(Math.random() * thankYouPhrases.length)];
-  speech.textContent = phrase;
-  speech.classList.add('show');
-
-
-  const rect = customerEl.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top;
-  for (let i = 0; i < 6; i++) {
-    setTimeout(() => {
-      const m = document.createElement('div');
-      m.className = 'money-rain';
-      m.textContent = ['💵', '💰', '💲', '🪙'][Math.floor(Math.random() * 4)];
-      m.style.left = (cx + (Math.random() - 0.5) * 80) + 'px';
-      m.style.top = (cy + Math.random() * 20) + 'px';
-      document.body.appendChild(m);
-      setTimeout(() => m.remove(), 1200);
-    }, i * 100);
-  }
-
-  updateHUD();
-  updateCookLabel();
-
-  setTimeout(() => {
-    speech.classList.remove('show');
-    const body = customerEl.querySelector('.person-body');
-    body.style.opacity = '0';
-    body.style.transition = 'opacity 0.5s';
-    setTimeout(() => {
-      const newIdx = Math.floor(Math.random() * personStyles.length);
-      const newStyle = personStyles[newIdx];
-      const newBody = makePerson(newStyle);
-      body.remove();
-      const speechEl = customerEl.querySelector('.speech');
-      speechEl.insertAdjacentHTML('afterend', newBody);
-      customerEl.querySelector('.person-body').style.opacity = '0';
-      customerEl.querySelector('.person-body').style.transition = 'opacity 0.5s';
-      setTimeout(() => { customerEl.querySelector('.person-body').style.opacity = '1'; }, 50);
-      customerEl.classList.remove('happy');
-      customerEl.classList.add('waiting');
-    }, 800);
-  }, 1500);
-}
-
-// Sell bacon button
-const sellBtn = document.getElementById('sell-btn');
-sellBtn.addEventListener('click', () => {
-  if (baconCount === 0) return;
-  const earned = baconCount * 5;
-  money += earned;
-  const popup = document.createElement('div');
-  popup.className = 'sell-popup';
-  popup.textContent = `+$${earned}`;
-  popup.style.left = '50%';
-  popup.style.top = '40%';
-  document.body.appendChild(popup);
-  setTimeout(() => popup.remove(), 1000);
-  baconCount = 0;
-  updateHUD();
-  updateCookLabel();
-  showMessage(`Sold for $${earned}!`);
-});
-
-document.getElementById('back-to-yard').addEventListener('click', () => showScreen('yard'));
-document.getElementById('go-shop').addEventListener('click', () => {
-  showScreen('shop');
-  renderShop();
-});
-
-// ========= SHOP =========
-function renderShop() {
-  const pigContainer = document.getElementById('pig-skins');
-  const panContainer = document.getElementById('pan-skins');
-  pigContainer.innerHTML = '';
-  panContainer.innerHTML = '';
-
-  pigSkins.forEach(skin => {
-    const div = document.createElement('div');
-    div.className = 'shop-item';
-    if (skin.owned) div.classList.add('owned');
-    if (skin.id === currentPigSkin.id) div.classList.add('selected');
-    const rainbowClass = skin.id === 'rainbow' ? ' rainbow-skin' : '';
-    div.innerHTML = `
-      <div class="preview${rainbowClass}" style="--pig-color:${skin.color};--pig-nose:${skin.nose};--pig-nostril:${skin.nostril};--pig-ear:${skin.ear};transform:scale(0.55);transform-origin:top center;height:44px;overflow:hidden;">${createPigHTML()}</div>
-      <div class="item-name">${skin.name}</div>
-      <div class="item-price ${skin.price === 0 ? 'free' : ''}">${skin.owned ? (skin.id === currentPigSkin.id ? 'Using' : 'Owned') : '$' + skin.price}</div>
-    `;
-    div.addEventListener('click', () => {
-      if (skin.owned) {
-        currentPigSkin = skin;
-        applyPigSkin();
-        saveGameState();
-        renderShop();
-      } else if (money >= skin.price) {
-        money -= skin.price;
-        skin.owned = true;
-        currentPigSkin = skin;
-        applyPigSkin();
-        updateHUD();
-        renderShop();
-        showMessage(`Bought ${skin.name}!`);
-      } else {
-        showMessage('Not enough money!');
-      }
-    });
-    pigContainer.appendChild(div);
+    el.className = 'snout-deco';
+    el.textContent = emoji;
+    el.style.left = (5 + i * 16 + Math.random() * 8) + '%';
+    el.style.top  = (10 + Math.random() * 75) + '%';
+    el.style.setProperty('--sd', (4 + Math.random() * 5).toFixed(1) + 's');
+    el.style.animationDelay = (Math.random() * 4).toFixed(1) + 's';
+    document.body.appendChild(el);
   });
-
-  panSkins.forEach(skin => {
-    const div = document.createElement('div');
-    div.className = 'shop-item';
-    if (skin.owned) div.classList.add('owned');
-    if (skin.id === currentPanSkin.id) div.classList.add('selected');
-    div.innerHTML = `
-      <div class="preview">${skin.emoji}</div>
-      <div class="item-name">${skin.name}</div>
-      <div class="item-price ${skin.price === 0 ? 'free' : ''}">${skin.owned ? (skin.id === currentPanSkin.id ? 'Using' : 'Owned') : '$' + skin.price}</div>
-    `;
-    div.addEventListener('click', () => {
-      if (skin.owned) {
-        currentPanSkin = skin;
-        fryingPan.textContent = skin.emoji;
-        saveGameState();
-        renderShop();
-      } else if (money >= skin.price) {
-        money -= skin.price;
-        skin.owned = true;
-        currentPanSkin = skin;
-        fryingPan.textContent = skin.emoji;
-        updateHUD();
-        renderShop();
-        showMessage(`Bought ${skin.name}!`);
-      } else {
-        showMessage('Not enough money!');
-      }
-    });
-    panContainer.appendChild(div);
-  });
-}
-
-document.getElementById('shop-back').addEventListener('click', () => showScreen('kitchen'));
-
-// ========= CASH OUT =========
-const cashoutOverlay = document.getElementById('cashout-overlay');
-const cashoutMain = document.getElementById('cashout-main');
-const cashoutSuccess = document.getElementById('cashout-success');
-
-document.getElementById('money-hud').addEventListener('click', () => {
-  if (money <= 0) {
-    showMessage('No money to cash out yet!');
-    return;
-  }
-  document.getElementById('cashout-amount').textContent = '$' + money;
-  cashoutMain.style.display = 'block';
-  cashoutSuccess.classList.remove('show');
-  cashoutOverlay.classList.add('show');
-});
-
-document.querySelectorAll('.cashout-method[data-method]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const method = btn.dataset.method;
-    document.getElementById('success-amount').textContent = '$' + money;
-    document.getElementById('success-label').textContent = 'Sent to your ' + method;
-    cashoutMain.style.display = 'none';
-    cashoutSuccess.classList.add('show');
-    money = 0;
-    updateHUD();
-  });
-});
-
-document.getElementById('double-money').addEventListener('click', () => {
-  money = money * 2;
-  updateHUD();
-  document.getElementById('cashout-amount').textContent = '$' + money;
-  showMessage('DOUBLED! You have $' + money + '!');
-});
-
-document.getElementById('cashout-cancel').addEventListener('click', () => {
-  cashoutOverlay.classList.remove('show');
-});
-
-document.getElementById('cashout-done').addEventListener('click', () => {
-  cashoutOverlay.classList.remove('show');
-});
-
-// ========= SKINS =========
-function applyPigSkin() {
-  // Apply skin to all piggies currently in the yard
-  yardPiggies.forEach(pig => applyPigSkinToElement(pig.el));
-}
-
-// ========= HUD =========
-function updateHUD() {
-  moneyDisplay.textContent = '$' + money;
-  baconDisplay.textContent = baconCount + ' 🥓';
-  saveGameState();
-}
-
-// ========= ANIMATION LOOP (handles all piggies) =========
-function animate() {
-  if (currentScreen === 'yard') {
-    for (const pig of yardPiggies) {
-      const dx = mouseX - pig.x;
-      const dy = mouseY - pig.y;
-      const dist = Math.hypot(dx, dy);
-
-      const isHeld = pickedUpPiggies.includes(pig);
-
-      // Random idle oinks
-      pig.oinkTimer--;
-      if (pig.oinkTimer <= 0 && !isHeld) {
-        if (Math.random() < 0.1) playOink();
-        pig.oinkTimer = 300 + Math.random() * 600;
-      }
-
-      // Random winks
-      pig.winkTimer--;
-      if (pig.winkTimer <= 0 && !isHeld) {
-        const eye = pig.el.querySelector('.pig-eye.right-eye');
-        if (eye) {
-          eye.classList.add('winking');
-          setTimeout(() => eye.classList.remove('winking'), 180);
-        }
-        pig.winkTimer = 300 + Math.random() * 500;
-      }
-
-      if (isHeld) {
-        // Picked up — follow the mouse with a small offset so they don't stack
-        const idx = pickedUpPiggies.indexOf(pig);
-        const offsetX = (idx - (pickedUpPiggies.length - 1) / 2) * 50;
-        const targetX = mouseX + offsetX;
-        const targetY = mouseY - idx * 15;
-        pig.x += (targetX - pig.x) * 0.15;
-        pig.y += (targetY - pig.y) * 0.15;
-        pig.isEating = false;
-      } else {
-        const isPanicking = disasterState === 'warning';
-        const scareRadius = isPanicking ? 400 : 180;
-
-        if (dist < scareRadius) {
-          pig.isEating = false;
-          if (Math.random() < (isPanicking ? 0.08 : 0.02)) playOink();
-          const push = (scareRadius - dist) / scareRadius;
-          const pushStr = isPanicking ? 0.6 : 0.25;
-          pig.vx -= (dx / dist) * push * pushStr;
-          pig.vy -= (dy / dist) * push * pushStr;
-        } else {
-          pig.wanderTimer--;
-
-          // No eating during panic
-          if (!isPanicking && pig.eatingTimer <= 0 && !pig.isEating && Math.random() < 0.008) {
-            pig.isEating = true;
-            pig.eatingTimer = 80 + Math.random() * 120;
-            pig.vx = 0;
-            pig.vy = 0;
-          }
-
-          if (pig.isEating) {
-            pig.eatingTimer--;
-            if (pig.eatingTimer <= 0) pig.isEating = false;
-          } else {
-            pig.eatingTimer--;
-          }
-          if (!pig.isEating && pig.wanderTimer <= 0) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = isPanicking ? 1.2 : 0.3;
-            pig.wanderDirX = Math.cos(angle) * speed;
-            pig.wanderDirY = Math.sin(angle) * speed;
-            pig.wanderTimer = isPanicking ? (10 + Math.random() * 20) : (60 + Math.random() * 120);
-          }
-
-          if (!pig.isEating) {
-            const acc = isPanicking ? 0.18 : 0.05;
-            pig.vx += pig.wanderDirX * acc;
-            pig.vy += pig.wanderDirY * acc;
-          }
-        }
-
-        pig.vx *= isPanicking ? 0.92 : 0.95;
-        pig.vy *= 0.95;
-        pig.x += pig.vx;
-        pig.y += pig.vy;
-
-        // Keep on screen
-        const margin = 60;
-        if (pig.x < margin) { pig.x = margin; pig.vx *= -0.5; pig.wanderDirX *= -1; }
-        if (pig.x > window.innerWidth - margin) { pig.x = window.innerWidth - margin; pig.vx *= -0.5; pig.wanderDirX *= -1; }
-        if (pig.y < window.innerHeight * 0.5) { pig.y = window.innerHeight * 0.5; pig.vy *= -0.5; pig.wanderDirY *= -1; }
-        if (pig.y > window.innerHeight - margin) { pig.y = window.innerHeight - margin; pig.vy *= -0.5; pig.wanderDirY *= -1; }
-      }
-
-      // Face direction
-      const faceDX = isHeld ? dx : pig.vx;
-      const scaleX = faceDX < -0.1 ? -1 : 1;
-
-      // Leg animation
-      const speed = Math.hypot(pig.vx, pig.vy);
-      const isMoving = isHeld ? dist > 3 : (speed > 0.5 && !pig.isEating);
-      if (isMoving !== pig.moving) {
-        pig.moving = isMoving;
-        if (isMoving) pig.el.classList.remove('stopped');
-        else pig.el.classList.add('stopped');
-      }
-
-      pig.el.style.transform = `translate(${pig.x - 40}px, ${pig.y - 35}px) scaleX(${scaleX})`;
-    }
-  }
-  barnRefreshCounter++;
-  if (currentScreen === 'barn' && barnRefreshCounter >= 60) {
-    barnRefreshCounter = 0;
-    refreshBarnCards();
-  }
-  requestAnimationFrame(animate);
-}
-
-// ========= DISASTER SYSTEM =========
-const disasters = [
-  { id: 'tornado',    name: 'TORNADO',    emoji: '🌪️', bg: 'linear-gradient(180deg,#1a1a1a,#3a3a2a)', penalty: 25 },
-  { id: 'hurricane',  name: 'HURRICANE',  emoji: '🌀', bg: 'linear-gradient(180deg,#0a1a4a,#0a3080)', penalty: 30 },
-  { id: 'earthquake', name: 'EARTHQUAKE', emoji: '🌋', bg: 'linear-gradient(180deg,#2a1000,#7a3010)', penalty: 20 },
-];
-
-let disasterState = 'idle'; // 'idle' | 'warning' | 'striking'
-let currentDisaster = null;
-let disasterCountdown = 30;
-let disasterInterval = null;
-let disasterScheduleTimer = null;
-let pigsInShelter = 0;
-let disasterGraceUsed = false; // only one 5-second grace per disaster
-
-function scheduleNextDisaster() {
-  clearTimeout(disasterScheduleTimer);
-  const delay = 60 * 1000; // 1 minute between disasters
-  disasterScheduleTimer = setTimeout(() => {
-    if (disasterState === 'idle') {
-      triggerDisasterWarning(disasters[Math.floor(Math.random() * disasters.length)]);
-    } else {
-      scheduleNextDisaster();
-    }
-  }, delay);
-}
-
-// ---- Disaster visual effect state ----
-let disasterVisualRAF = null;
-let debrisInterval    = null;
-
-function startDisasterVisuals(disaster) {
-  clearDisasterVisuals();
-  const yard = document.getElementById('yard');
-
-  if (disaster.id === 'tornado') {
-    yard.classList.add('sky-tornado');
-
-    // Div-based realistic tornado
-    const wrap = document.createElement('div');
-    wrap.id = 'd-funnel';
-    wrap.innerHTML = `
-      <div class="t-cloud"></div>
-      <div class="t-layer t-layer-1"></div>
-      <div class="t-layer t-layer-2"></div>
-      <div class="t-layer t-layer-3"></div>
-      <div class="t-layer t-layer-4"></div>
-      <div class="t-dust"></div>
-    `;
-    document.body.appendChild(wrap);
-
-    const debrisEmoji = ['🍃','🪵','📦','🧱','🪑','🌿','🛖','🐄','🐔'];
-    let tx = 50, tDir = 1;
-
-    const moveFunnel = () => {
-      if (disasterState !== 'warning') return;
-      tx += tDir * 0.4;
-      if (tx > 78) tDir = -1;
-      if (tx < 12) tDir =  1;
-      wrap.style.left = tx + 'vw';
-      disasterVisualRAF = requestAnimationFrame(moveFunnel);
-    };
-    moveFunnel();
-
-    debrisInterval = setInterval(() => {
-      if (disasterState !== 'warning') return;
-      const d = document.createElement('div');
-      d.textContent = debrisEmoji[Math.floor(Math.random() * debrisEmoji.length)];
-      d.style.cssText = `position:fixed;font-size:${24+Math.random()*24}px;left:${Math.random()*90}vw;top:${10+Math.random()*70}vh;z-index:9001;pointer-events:none;transition:transform 1.2s linear,opacity 1.2s linear;`;
-      document.body.appendChild(d);
-      requestAnimationFrame(() => {
-        d.style.transform = `translate(${(Math.random()-0.5)*400}px,${(Math.random()-0.5)*300}px) rotate(${Math.random()*720}deg)`;
-        d.style.opacity = '0';
-      });
-      setTimeout(() => d.remove(), 1300);
-    }, 180);
-
-  } else if (disaster.id === 'hurricane') {
-    yard.classList.add('sky-hurricane');
-
-    // Hurricane icon
-    const icon = document.createElement('div');
-    icon.id = 'd-hurricane-icon';
-    icon.textContent = '🌀';
-    yard.appendChild(icon);
-
-    // Rain canvas inside yard
-    const canvas = document.createElement('canvas');
-    canvas.id = 'd-rain';
-    canvas.width  = yard.offsetWidth  || window.innerWidth;
-    canvas.height = yard.offsetHeight || window.innerHeight;
-    yard.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-    const drops = Array.from({length: 300}, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      speed: 14 + Math.random() * 12,
-      len: 22 + Math.random() * 26,
-    }));
-    const drawRain = () => {
-      if (disasterState !== 'warning') { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = 'rgba(160,210,255,0.8)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      drops.forEach(drop => {
-        ctx.moveTo(drop.x, drop.y);
-        ctx.lineTo(drop.x + drop.len * 0.45, drop.y + drop.len);
-        drop.x += drop.speed * 0.45;
-        drop.y += drop.speed;
-        if (drop.y > canvas.height) { drop.y = -30; drop.x = Math.random() * canvas.width; }
-        if (drop.x > canvas.width)  { drop.x = 0; }
-      });
-      ctx.stroke();
-      disasterVisualRAF = requestAnimationFrame(drawRain);
-    };
-    drawRain();
-
-  } else {
-    // Earthquake
-    yard.classList.add('sky-earthquake', 'quake-rumble');
-
-    // Ground cracks
-    for (let i = 0; i < 7; i++) {
-      const crack = document.createElement('div');
-      crack.className = 'd-crack';
-      crack.style.cssText = `bottom:${5+Math.random()*30}%;left:${Math.random()*70}%;width:${100+Math.random()*180}px;transform:rotate(${(Math.random()-0.5)*22}deg);animation-delay:${i*0.15}s;`;
-      yard.appendChild(crack);
-    }
-
-    // Recurring dust puffs
-    debrisInterval = setInterval(() => {
-      if (disasterState !== 'warning') return;
-      const dust = document.createElement('div');
-      dust.className = 'd-dust';
-      dust.style.cssText = `bottom:${5+Math.random()*35}%;left:${5+Math.random()*88}%;`;
-      yard.appendChild(dust);
-      setTimeout(() => dust.remove(), 1600);
-    }, 500);
-  }
-}
-
-function clearDisasterVisuals() {
-  if (disasterVisualRAF) { cancelAnimationFrame(disasterVisualRAF); disasterVisualRAF = null; }
-  if (debrisInterval)    { clearInterval(debrisInterval); debrisInterval = null; }
-  const yard = document.getElementById('yard');
-  yard.classList.remove('sky-tornado','sky-hurricane','sky-earthquake','quake-rumble');
-  ['d-funnel','d-hurricane-icon','d-rain'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-  });
-  yard.querySelectorAll('.d-crack,.d-dust').forEach(el => el.remove());
-}
-
-function triggerDisasterWarning(disaster) {
-  clearInterval(disasterInterval); // guard against double-calls
-  currentDisaster = disaster;
-  disasterState = 'warning';
-  disasterCountdown = 30;
-  disasterGraceUsed = false;
-
-  document.getElementById('dw-icon').textContent  = disaster.emoji;
-  document.getElementById('dw-name').textContent  = '⚠️ ' + disaster.name + ' WARNING!';
-  document.getElementById('dw-count').textContent = disasterCountdown;
-  document.getElementById('dw-count').className   = 'dw-count';
-  document.getElementById('disaster-warning').classList.add('active');
-  document.getElementById('yard').classList.add('disaster-mode');
-  document.getElementById('shelter-btn').classList.add('visible');
-  pigsInShelter = 0;
-
-  startDisasterVisuals(disaster);
-
-  showMessage('⚠️ ' + disaster.name + ' COMING! Get pigs to the SHELTER!');
-
-  disasterInterval = setInterval(() => {
-    disasterCountdown--;
-    const el = document.getElementById('dw-count');
-    el.textContent = disasterCountdown;
-    el.className = 'dw-count' + (disasterCountdown <= 10 ? ' urgent' : '');
-
-    // Urgent oinking when pigs are still outside in the last 10 seconds
-    if (disasterCountdown <= 10 && disasterCountdown > 0 && yardPiggies.length > 0) {
-      playOink();
-    }
-
-    if (disasterCountdown <= 0) {
-      // If pigs are still outside and grace hasn't been used, give 5 more seconds
-      if (yardPiggies.length > 0 && !disasterGraceUsed) {
-        disasterGraceUsed = true;
-        disasterCountdown = 5;
-        playOink(); playOink(); // double oink to signal the grace period
-        showMessage('🐷 OINK OINK! 5 extra seconds — save your piggies!!');
-      } else {
-        clearInterval(disasterInterval);
-        strikeDisaster();
-      }
-    }
-  }, 1000);
-}
-
-function strikeDisaster() {
-  disasterState = 'striking';
-  clearDisasterVisuals();
-  document.getElementById('disaster-warning').classList.remove('active');
-  document.getElementById('yard').classList.remove('disaster-mode');
-  document.getElementById('shelter-btn').classList.remove('visible');
-
-  // Count losses — any pig still in the yard
-  const lostCount = yardPiggies.length;
-  const penalty   = lostCount * currentDisaster.penalty;
-  if (penalty > 0) { money -= penalty; updateHUD(); }
-
-  // Wipe the yard
-  yardPiggies = [];
-  pickedUpPiggies = [];
-  document.getElementById('yard-piggies').innerHTML = '';
-
-  // Build damage report
-  let msg = '';
-  if (lostCount === 0) {
-    msg = '✅ All pigs made it to the shelter!\nNo money lost! 🐷💚';
-    if (pigsInShelter > 0) msg += '\n' + pigsInShelter + ' pig' + (pigsInShelter > 1 ? 's' : '') + ' sheltered safely!';
-  } else {
-    if (pigsInShelter > 0) msg += pigsInShelter + ' pig' + (pigsInShelter > 1 ? 's' : '') + ' sheltered safely ✅\n';
-    msg += lostCount + ' pig' + (lostCount > 1 ? 's' : '') + ' lost to the ' + currentDisaster.name.toLowerCase() + '! 😱';
-    msg += '\n-$' + penalty + ' in damages!';
-    if (money < 0) msg += '\n💸 You\'re $' + Math.abs(money) + ' in debt!';
-  }
-
-  const overlay = document.getElementById('disaster-overlay');
-  overlay.style.background = currentDisaster.bg;
-  document.getElementById('ds-icon').textContent  = currentDisaster.emoji;
-  document.getElementById('ds-title').textContent = currentDisaster.emoji + ' ' + currentDisaster.name + ' STRUCK!';
-  document.getElementById('ds-damage').textContent = msg;
-  overlay.classList.add('active');
-
-  // Earthquake screen shake
-  if (currentDisaster.id === 'earthquake') {
-    document.body.classList.add('quake-shake');
-    setTimeout(() => document.body.classList.remove('quake-shake'), 2000);
-  }
-}
-
-document.getElementById('disaster-ok').addEventListener('click', () => {
-  document.getElementById('disaster-overlay').classList.remove('active');
-  clearDisasterVisuals();
-  disasterState = 'idle';
-  currentDisaster = null;
-  pigsInShelter = 0;
-  showScreen('yard');
-  scheduleNextDisaster();
-});
-
-// Shelter button — saves picked-up pigs during disaster warning
-document.getElementById('shelter-btn').addEventListener('click', () => {
-  if (disasterState !== 'warning') return;
-  if (pickedUpPiggies.length === 0) {
-    showMessage('Pick up pigs first, then run to the shelter!');
-    return;
-  }
-  const count = pickedUpPiggies.length;
-  pickedUpPiggies.forEach(pig => {
-    const idx = yardPiggies.indexOf(pig);
-    if (idx !== -1) yardPiggies.splice(idx, 1);
-    pig.el.remove();
-  });
-  pickedUpPiggies = [];
-  pigsInShelter += count;
-  showMessage(count === 1 ? '1 pig safe in the shelter! 🏗️' : count + ' pigs safe in the shelter! 🏗️');
-});
-
-// ========= START =========
-spawnYardPiggies(4);
-applyPigSkin(); // apply saved skin to yard pigs
-fryingPan.textContent = currentPanSkin.emoji; // apply saved pan skin
-requestAnimationFrame(animate);
-updateHUD();
-scheduleNextDisaster(); // first disaster in 1 min, then every 1 min
-
-// Allow direct screen access via URL hash (for screenshots/testing)
-if (location.hash === '#kitchen') { showScreen('kitchen'); }
 </script>
 </body>
 </html>
