@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frankie's Piggy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    overflow: hidden;
+    height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    cursor: default;
+    user-select: none;
+  }
+
+  /* ========= SCREENS ========= */
+  .screen { display: none; width: 100%; height: 100vh; position: relative; }
+  .screen.active { display: block; }
+
+  /* --- YARD --- */
+  #yard {
+    background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 55%, #7ec850 55%, #5dad3a 100%);
+  }
+
+  /* --- SUN --- */
+  .sun {
+    position: absolute; top: 40px; right: 80px;
+    width: 90px; height: 90px;
+    background: radial-gradient(circle, #FFE44D 40%, #FFD700 70%, transparent 71%);
+    border-radius: 50%;
+    z-index: 1;
+    box-shadow: 0 0 40px 15px rgba(255,220,50,0.4), 0 0 80px 30px rgba(255,200,0,0.15);
+    animation: sun-glow 3s ease-in-out infinite;
+  }
+  @keyframes sun-glow {
+    0%, 100% { box-shadow: 0 0 40px 15px rgba(255,220,50,0.4), 0 0 80px 30px rgba(255,200,0,0.15); }
+    50% { box-shadow: 0 0 50px 20px rgba(255,220,50,0.5), 0 0 100px 40px rgba(255,200,0,0.2); }
+  }
+  .sun-ray {
+    position: absolute; top: 50%; left: 50%;
+    width: 120px; height: 120px;
+    margin-top: -60px; margin-left: -60px;
+    animation: sun-spin 20s linear infinite;
+  }
+  @keyframes sun-spin { to { transform: rotate(360deg); } }
+
+  /* --- YARD PIGGY (multiple) --- */
+  .yard-piggy {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 50;
+    will-change: transform;
+    transition: filter 0.2s;
+  }
+  .yard-piggy.picked-up {
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+    z-index: 51;
+  }
+
+  /* --- KITCHEN --- */
+  #kitchen {
+    background: linear-gradient(180deg, #f5e6d0 0%, #e8d5b8 100%);
+  }
+  .kitchen-floor {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg, #c4956a, #a87a52);
+    z-index: 4;
+  }
+  .kitchen-counter {
+    position: absolute; bottom: 38%; left: 10%; right: 10%; height: 12%;
+    background: linear-gradient(180deg, #8B7355, #6b5740);
+    border-radius: 8px 8px 0 0;
+    z-index: 5;
+  }
+  .kitchen-counter-top {
+    position: absolute; top: -6px; left: -2%; right: -2%; height: 10px;
+    background: linear-gradient(180deg, #d4c4a8, #bfae8e);
+    border-radius: 4px;
+  }
+
+  /* --- SHOP --- */
+  #shop {
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2, #ffcc80);
+  }
+
+  /* (follower-piggy rules moved to .yard-piggy above) */
+  .pig-body-wrap {
+    position: relative;
+    width: 80px;
+    height: 70px;
+  }
+  .pig-body {
+    position: absolute; top: 8px; left: 10px;
+    width: 55px; height: 40px;
+    background: var(--pig-color, #f8a0b0);
+    border-radius: 50%; z-index: 2;
+  }
+  .pig-head {
+    position: absolute; top: 0; right: -8px;
+    width: 38px; height: 34px;
+    background: var(--pig-color, #f8a0b0);
+    border-radius: 50%; z-index: 3;
+  }
+  .pig-eye {
+    position: absolute; top: 8px;
+    width: 6px; height: 7px;
+    background: #333; border-radius: 50%;
+  }
+  .pig-eye.right-eye { right: 8px; }
+  .pig-eye.left-eye { right: 18px; }
+  .pig-nose {
+    position: absolute; top: 14px; right: 2px;
+    width: 16px; height: 11px;
+    background: var(--pig-nose, #e08090);
+    border-radius: 50%;
+  }
+  .pig-nostril {
+    position: absolute; top: 3px;
+    width: 4px; height: 4px;
+    background: var(--pig-nostril, #c06070);
+    border-radius: 50%;
+  }
+  .pig-nostril.left { left: 3px; }
+  .pig-nostril.right { right: 3px; }
+  .pig-ear {
+    position: absolute; top: -5px;
+    width: 12px; height: 10px;
+    background: var(--pig-ear, #e89aa8);
+    border-radius: 50% 50% 20% 20%;
+    z-index: 4;
+  }
+  .pig-ear.right-ear { right: 6px; transform: rotate(15deg); }
+  .pig-ear.left-ear { right: 18px; transform: rotate(-15deg); }
+  .pig-tail {
+    position: absolute; top: 14px; left: -2px;
+    width: 18px; height: 18px;
+    border: 3px solid var(--pig-nose, #e08090);
+    border-color: var(--pig-nose, #e08090) transparent transparent var(--pig-nose, #e08090);
+    border-radius: 50%; transform: rotate(45deg); z-index: 1;
+    animation: tail-wag 0.4s ease-in-out infinite;
+  }
+  @keyframes tail-wag {
+    0%, 100% { transform: rotate(35deg); }
+    50% { transform: rotate(55deg); }
+  }
+  .pig-legs {
+    position: absolute; bottom: 0; left: 14px;
+    display: flex; gap: 6px; z-index: 1;
+  }
+  .pig-leg {
+    position: relative; width: 9px; height: 16px;
+    background: var(--pig-color, #f8a0b0);
+    border-radius: 0 0 4px 4px; transform-origin: top center;
+  }
+  .pig-hoof {
+    position: absolute; bottom: 0; left: 1px;
+    width: 7px; height: 4px;
+    background: var(--pig-nostril, #c07080);
+    border-radius: 0 0 3px 3px;
+  }
+  .leg-1 { animation: walk-left 0.3s ease-in-out infinite; }
+  .leg-2 { animation: walk-right 0.3s ease-in-out infinite; }
+  .leg-3 { animation: walk-left 0.3s ease-in-out infinite; }
+  .leg-4 { animation: walk-right 0.3s ease-in-out infinite; }
+  .yard-piggy.stopped .pig-leg { animation: none; }
+  .yard-piggy.stopped .pig-tail { animation: none; transform: rotate(45deg); }
+  @keyframes walk-left {
+    0%, 100% { transform: rotate(-20deg); }
+    50% { transform: rotate(20deg); }
+  }
+  @keyframes walk-right {
+    0%, 100% { transform: rotate(20deg); }
+    50% { transform: rotate(-20deg); }
+  }
+
+  /* ========= HOUSE BUTTON (yard) ========= */
+  #house-btn {
+    position: absolute; bottom: 18%; right: 8%;
+    font-size: 64px; cursor: pointer; z-index: 60;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+    transition: transform 0.2s;
+  }
+  #house-btn:hover { transform: scale(1.15); }
+  #house-label {
+    position: absolute; bottom: 10%; right: 6%;
+    background: rgba(0,0,0,0.5); color: white;
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 600; z-index: 60;
+  }
+
+  /* ========= MONEY HUD ========= */
+  #money-hud {
+    position: fixed; top: 16px; right: 20px;
+    background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 10px 20px;
+    color: white; text-align: center; z-index: 200;
+    font-size: 28px; font-weight: 900;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  #money-hud:hover { transform: scale(1.08); }
+  #money-hud .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+  #money-hud .cashout-hint { font-size: 9px; opacity: 0.5; margin-top: 2px; }
+
+  /* ========= BACON COUNT HUD ========= */
+  #bacon-hud {
+    position: fixed; top: 16px; left: 20px;
+    background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 10px 20px;
+    color: white; text-align: center; z-index: 200;
+    font-size: 28px; font-weight: 900;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  #bacon-hud .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ========= KITCHEN FRYING PAN ========= */
+  #frying-pan {
+    position: absolute; bottom: 42%; left: 50%; transform: translateX(-50%);
+    font-size: 80px; cursor: pointer; z-index: 10;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  }
+  #frying-pan:hover { transform: translateX(-50%) scale(1.1); }
+  #frying-pan.cooking {
+    animation: pan-sizzle 0.5s ease-in-out;
+  }
+  @keyframes pan-sizzle {
+    0%, 100% { transform: translateX(-50%) rotate(0deg); }
+    25% { transform: translateX(-50%) rotate(-10deg) scale(1.1); }
+    75% { transform: translateX(-50%) rotate(10deg) scale(1.1); }
+  }
+
+  #cook-label {
+    position: absolute; bottom: 36%; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.5); color: white;
+    padding: 8px 20px; border-radius: 20px;
+    font-size: 16px; font-weight: 600; z-index: 10;
+  }
+
+  /* ========= KITCHEN BUTTONS ========= */
+  .kitchen-btn {
+    position: absolute; z-index: 60;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border: none; color: white; font-size: 18px; font-weight: 700;
+    padding: 12px 30px; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.15s;
+  }
+  .kitchen-btn:hover { transform: scale(1.05); }
+  #sell-btn { bottom: 4%; left: 50%; transform: translateX(-50%); }
+  #sell-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: translateX(-50%); }
+  #back-to-yard { bottom: 4%; left: 8%; }
+  #go-shop { bottom: 4%; right: 8%; }
+
+  /* ========= CUSTOMERS ========= */
+  .kitchen-register {
+    position: absolute; bottom: 42%; right: 14%;
+    font-size: 40px; z-index: 6;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+  }
+  .customer-table {
+    position: absolute; bottom: 32%; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 50px; z-index: 3;
+    align-items: flex-end;
+  }
+  .customer {
+    text-align: center; position: relative;
+    transition: transform 0.3s;
+    cursor: pointer;
+  }
+  /* --- CSS PERSON --- */
+  .person-body {
+    position: relative; width: 140px; height: 280px;
+  }
+  .person-head {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 70px; height: 70px; border-radius: 50%;
+    z-index: 3;
+  }
+  .person-hair {
+    position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+    width: 78px; height: 38px; border-radius: 50% 50% 0 0;
+    z-index: 4;
+  }
+  .person-eyes {
+    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    width: 32px; display: flex; justify-content: space-between; z-index: 5;
+  }
+  .person-eye {
+    width: 8px; height: 10px; background: #333; border-radius: 50%;
+  }
+  .person-mouth {
+    position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
+    width: 16px; height: 8px; border-bottom: 3px solid #333;
+    border-radius: 0 0 50% 50%; z-index: 5;
+  }
+  .person-torso {
+    position: absolute; top: 65px; left: 50%; transform: translateX(-50%);
+    width: 72px; height: 85px; border-radius: 10px 10px 0 0;
+    z-index: 2;
+  }
+  .person-arm {
+    position: absolute; top: 68px;
+    width: 22px; height: 75px; border-radius: 11px;
+    z-index: 1; transform-origin: top center;
+  }
+  .person-arm.left-arm { left: 6px; transform: rotate(8deg); }
+  .person-arm.right-arm { right: 6px; transform: rotate(-8deg); }
+  .customer.waiting .person-arm {
+    animation: arm-idle 2s ease-in-out infinite;
+  }
+  .customer.waiting .person-arm.right-arm {
+    animation: arm-idle 2s ease-in-out infinite 0.5s;
+  }
+  @keyframes arm-idle {
+    0%, 100% { transform: rotate(8deg); }
+    50% { transform: rotate(3deg); }
+  }
+  .customer.happy .person-arm.right-arm {
+    animation: arm-wave 0.4s ease-in-out 3;
+  }
+  @keyframes arm-wave {
+    0%, 100% { transform: rotate(-8deg); }
+    50% { transform: rotate(-40deg); }
+  }
+  .person-legs {
+    position: absolute; top: 148px; left: 50%; transform: translateX(-50%);
+    width: 60px; display: flex; justify-content: space-between;
+    z-index: 2;
+  }
+  .person-leg {
+    width: 25px; height: 80px; border-radius: 0 0 8px 8px;
+  }
+  .person-shoe {
+    position: absolute; bottom: 0; left: -3px;
+    width: 30px; height: 10px; border-radius: 5px 10px 5px 5px;
+  }
+  .customer .speech {
+    position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+    background: white; color: #333; padding: 6px 14px; border-radius: 14px;
+    font-size: 13px; font-weight: 600; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 20;
+  }
+  .customer .speech::after {
+    content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-top: 6px solid white;
+  }
+  .customer .speech.show { opacity: 1; }
+  .customer.waiting .person { animation: customer-bounce 1s ease-in-out infinite; }
+  @keyframes customer-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .customer.happy .person { animation: customer-happy 0.5s ease-out; }
+  @keyframes customer-happy {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .money-rain {
+    position: absolute; pointer-events: none; font-size: 24px;
+    animation: rain-fall 1.2s ease-out forwards; z-index: 300;
+  }
+  @keyframes rain-fall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    50% { opacity: 1; transform: translateY(-60px) rotate(20deg); }
+    100% { opacity: 0; transform: translateY(-100px) rotate(-10deg) scale(0.5); }
+  }
+
+  /* ========= SELL POPUP ========= */
+  .sell-popup {
+    position: absolute; pointer-events: none;
+    font-size: 32px; font-weight: 900; color: #4CAF50;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: money-fly 1s ease-out forwards;
+    z-index: 300;
+  }
+  @keyframes money-fly {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+  }
+
+  /* ========= BACON COOKING ANIMATION ========= */
+  .bacon-pop {
+    position: absolute; pointer-events: none;
+    font-size: 40px;
+    animation: bacon-pop-up 0.8s ease-out forwards;
+    z-index: 300;
+  }
+  @keyframes bacon-pop-up {
+    0% { opacity: 0; transform: scale(0.3) translateY(20px); }
+    40% { opacity: 1; transform: scale(1.3) translateY(-20px); }
+    100% { opacity: 1; transform: scale(1) translateY(-10px); }
+  }
+
+  /* ========= SHOP ========= */
+  .shop-title {
+    text-align: center; padding-top: 30px;
+    font-size: 36px; font-weight: 900; color: #5d4037;
+  }
+  .shop-section {
+    margin: 20px auto; max-width: 600px;
+  }
+  .shop-section h3 {
+    font-size: 20px; color: #6d4c41; margin: 12px 20px;
+  }
+  .shop-items {
+    display: flex; flex-wrap: wrap; gap: 12px; padding: 0 20px;
+    justify-content: center;
+  }
+  .shop-item {
+    background: white; border-radius: 16px; padding: 16px;
+    text-align: center; cursor: pointer; width: 120px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 3px solid transparent;
+  }
+  .shop-item:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .shop-item.owned { border-color: #4CAF50; }
+  .shop-item.selected { border-color: #2196F3; box-shadow: 0 0 0 3px rgba(33,150,243,0.3); }
+  .shop-item .preview { font-size: 40px; margin-bottom: 6px; }
+  .shop-item .item-name { font-size: 13px; font-weight: 600; color: #333; }
+  .shop-item .item-price { font-size: 14px; color: #888; margin-top: 4px; }
+  .shop-item .item-price.free { color: #4CAF50; }
+
+  .shop-back {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border: none; color: white; font-size: 18px; font-weight: 700;
+    padding: 12px 40px; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 60;
+  }
+  .shop-back:hover { transform: translateX(-50%) scale(1.05); }
+
+  /* ========= CASH OUT POPUP ========= */
+  #cashout-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  }
+  #cashout-overlay.show { display: flex; }
+  .cashout-box {
+    background: white; border-radius: 24px; padding: 30px 40px;
+    text-align: center; max-width: 340px; width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .cashout-box .cashout-icon { font-size: 50px; margin-bottom: 10px; }
+  .cashout-box h2 { font-size: 24px; color: #333; margin-bottom: 6px; }
+  .cashout-box .cashout-amount {
+    font-size: 48px; font-weight: 900; color: #4CAF50; margin: 10px 0;
+  }
+  .cashout-box .cashout-label { font-size: 14px; color: #888; margin-bottom: 20px; }
+  .cashout-methods {
+    display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;
+  }
+  .cashout-method {
+    background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 14px;
+    padding: 12px; cursor: pointer; font-size: 16px; font-weight: 600;
+    color: #333; transition: all 0.15s;
+  }
+  .cashout-method:hover { border-color: #4CAF50; background: #e8f5e9; }
+  .cashout-cancel {
+    background: none; border: none; color: #999; font-size: 14px;
+    cursor: pointer; padding: 8px;
+  }
+  .cashout-cancel:hover { color: #333; }
+
+  /* success screen after cashing out */
+  .cashout-success {
+    display: none; flex-direction: column; align-items: center;
+  }
+  .cashout-success.show { display: flex; }
+  .cashout-success .check {
+    font-size: 60px; margin-bottom: 10px;
+    animation: check-bounce 0.5s ease-out;
+  }
+  @keyframes check-bounce {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  .cashout-success h2 { font-size: 22px; color: #4CAF50; margin-bottom: 6px; }
+  .cashout-success .success-amount { font-size: 36px; font-weight: 900; color: #333; }
+  .cashout-success .success-label { font-size: 14px; color: #888; margin: 10px 0 20px; }
+
+  /* ========= MESSAGES ========= */
+  #message {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.7); color: white;
+    padding: 16px 32px; border-radius: 20px;
+    font-size: 22px; font-weight: 700; z-index: 400;
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  }
+  #message.show { opacity: 1; }
+
+  /* piggy hint on yard */
+  #piggy-hint {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.4); color: white;
+    padding: 8px 20px; border-radius: 20px;
+    font-size: 14px; z-index: 100; backdrop-filter: blur(6px);
+  }
+</style>
+</head>
+<body>
+
+<!-- ========= MONEY HUD (always visible) ========= -->
+<div id="money-hud">
+  <div class="label">Money</div>
+  <div id="money-display">$0</div>
+  <div class="cashout-hint">Tap to cash out!</div>
+</div>
+
+<!-- ========= CASH OUT POPUP ========= -->
+<div id="cashout-overlay">
+  <div class="cashout-box" id="cashout-main">
+    <div class="cashout-icon">💰</div>
+    <h2>Cash Out</h2>
+    <div class="cashout-amount" id="cashout-amount">$0</div>
+    <div class="cashout-label">Choose how to get paid:</div>
+    <div class="cashout-methods">
+      <div class="cashout-method" data-method="PayPal">💳 PayPal</div>
+      <div class="cashout-method" data-method="Venmo">📱 Venmo</div>
+      <div class="cashout-method" data-method="Cash App">💵 Cash App</div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:2px dashed #e0e0e0;">
+      <div class="cashout-method" id="double-money" style="background:#e8f5e9;border-color:#4CAF50;color:#2e7d32;">🤑 Double Your Money!</div>
+    </div>
+    <button class="cashout-cancel" id="cashout-cancel">Never mind</button>
+  </div>
+  <div class="cashout-success" id="cashout-success">
+    <div class="check">✅</div>
+    <h2>Payment Sent!</h2>
+    <div class="success-amount" id="success-amount">$0</div>
+    <div class="success-label" id="success-label">Sent to your PayPal</div>
+    <button class="cashout-method" id="cashout-done">Awesome!</button>
+  </div>
+</div>
+<div id="bacon-hud">
+  <div class="label">Bacon</div>
+  <div id="bacon-display">0 🥓</div>
+</div>
+<div id="message"></div>
+
+<!-- ========= YARD SCREEN ========= -->
+<div class="screen active" id="yard">
+  <div class="sun"><div class="sun-ray"></div></div>
+  <div id="yard-piggies"></div>
+  <div id="house-btn">🏠</div>
+  <div id="house-label">Kitchen</div>
+  <div id="piggy-hint">Chase the piggies! Click one to catch it, then bring it to the kitchen!</div>
+</div>
+
+<!-- ========= KITCHEN SCREEN ========= -->
+<div class="screen" id="kitchen">
+  <div class="kitchen-floor"></div>
+  <div class="kitchen-counter"><div class="kitchen-counter-top"></div></div>
+  <div id="frying-pan">🍳</div>
+  <div id="cook-label">Click the pan to cook!</div>
+  <div class="kitchen-register">🧾</div>
+  <div class="customer-table" id="customer-table"></div>
+  <button class="kitchen-btn" id="sell-btn" disabled>Sell Bacon</button>
+  <button class="kitchen-btn" id="back-to-yard">Back Outside</button>
+  <button class="kitchen-btn" id="go-shop">Shop 🛒</button>
+</div>
+
+<!-- ========= SHOP SCREEN ========= -->
+<div class="screen" id="shop">
+  <div class="shop-title">🛒 Piggy Shop</div>
+
+  <div class="shop-section">
+    <h3>🐷 Pig Skins</h3>
+    <div class="shop-items" id="pig-skins"></div>
+  </div>
+
+  <div class="shop-section">
+    <h3>🍳 Frying Pan Skins</h3>
+    <div class="shop-items" id="pan-skins"></div>
+  </div>
+
+  <button class="shop-back" id="shop-back">Back to Kitchen</button>
+</div>
+
+<script>
+// ========= SOUNDS =========
+// AudioContext MUST be created inside a user gesture (click/touch) or browsers block it.
+let audioCtx = null;
+let soundReady = false;
+
+// This runs on the very first click/touch anywhere on the page
+function initSound() {
+  if (soundReady) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Play a tiny silent sound to fully unlock audio
+    const buf = audioCtx.createBuffer(1, 1, 22050);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start(0);
+    soundReady = true;
+  } catch(e) {}
+}
+document.addEventListener('click', initSound, { capture: true });
+document.addEventListener('touchstart', initSound, { capture: true });
+
+function playSizzle() {
+  if (!soundReady) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const duration = 1.2;
+    const bufferSize = audioCtx.sampleRate * duration;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 3000;
+    filter.Q.value = 0.5;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+  } catch(e) {}
+}
+
+function playOink() {
+  if (!soundReady) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+    osc.frequency.exponentialRampToValueAtTime(150 + Math.random() * 50, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(400 + Math.random() * 100, now + 0.2);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.setValueAtTime(0.4, now + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } catch(e) {}
+}
+
+function playScaredOink() {
+  playOink();
+  setTimeout(() => playOink(), 150);
+}
+
+function pigSays(text) {
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.pitch = 2;
+    utter.rate = 1.2;
+    utter.volume = 1.0;
+    speechSynthesis.speak(utter);
+  }
+}
+
+const pigPhrases = [
+  "No, don't pick me up!",
+  "Hey! Put me down!",
+  "Nooo! Not the kitchen!",
+  "Oink oink! Let me go!",
+  "I don't wanna be bacon!",
+];
+
+// ========= GAME STATE =========
+let money = 0;
+let baconCount = 0;
+let currentScreen = 'yard';
+
+// ========= MULTIPLE PIGGIES =========
+let yardPiggies = [];      // array of piggy objects
+let pickedUpPiggies = [];  // all the piggies we're carrying
+let piggiesInKitchen = 0;  // how many piggies are ready to cook
+
+function createPigHTML() {
+  return `
+    <div class="pig-body-wrap">
+      <div class="pig-tail"></div>
+      <div class="pig-body"></div>
+      <div class="pig-head">
+        <div class="pig-ear right-ear"></div>
+        <div class="pig-ear left-ear"></div>
+        <div class="pig-eye right-eye"></div>
+        <div class="pig-eye left-eye"></div>
+        <div class="pig-nose">
+          <div class="pig-nostril left"></div>
+          <div class="pig-nostril right"></div>
+        </div>
+      </div>
+      <div class="pig-legs">
+        <div class="pig-leg leg-1"><div class="pig-hoof"></div></div>
+        <div class="pig-leg leg-2"><div class="pig-hoof"></div></div>
+        <div class="pig-leg leg-3"><div class="pig-hoof"></div></div>
+        <div class="pig-leg leg-4"><div class="pig-hoof"></div></div>
+      </div>
+    </div>
+  `;
+}
+
+function applyPigSkinToElement(el) {
+  el.style.setProperty('--pig-color', currentPigSkin.color);
+  el.style.setProperty('--pig-nose', currentPigSkin.nose);
+  el.style.setProperty('--pig-nostril', currentPigSkin.nostril);
+  el.style.setProperty('--pig-ear', currentPigSkin.ear);
+}
+
+function spawnYardPiggies(count) {
+  const container = document.getElementById('yard-piggies');
+  container.innerHTML = '';
+  yardPiggies = [];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'yard-piggy';
+    el.innerHTML = createPigHTML();
+    applyPigSkinToElement(el);
+    container.appendChild(el);
+    yardPiggies.push({
+      el: el,
+      x: 80 + Math.random() * (window.innerWidth - 160),
+      y: window.innerHeight * 0.56 + Math.random() * (window.innerHeight * 0.28),
+      vx: 0, vy: 0,
+      wanderTimer: Math.random() * 80,
+      wanderDirX: 0, wanderDirY: 0,
+      eatingTimer: 0, isEating: false,
+      moving: false,
+      oinkTimer: 60 + Math.random() * 200,
+    });
+  }
+}
+
+// Skins data
+const pigSkins = [
+  { id: 'classic', name: 'Classic Pink', color: '#f8a0b0', nose: '#e08090', nostril: '#c06070', ear: '#e89aa8', price: 0, owned: true },
+  { id: 'golden', name: 'Golden Pig', color: '#ffd700', nose: '#daa520', nostril: '#b8860b', ear: '#f0c040', price: 20 },
+  { id: 'purple', name: 'Purple Pig', color: '#ce93d8', nose: '#ab47bc', nostril: '#8e24aa', ear: '#ba68c8', price: 30 },
+  { id: 'blue', name: 'Blue Pig', color: '#90caf9', nose: '#42a5f5', nostril: '#1e88e5', ear: '#64b5f6', price: 30 },
+  { id: 'mint', name: 'Mint Pig', color: '#a5d6a7', nose: '#66bb6a', nostril: '#43a047', ear: '#81c784', price: 40 },
+  { id: 'red', name: 'Fire Pig', color: '#ef9a9a', nose: '#e53935', nostril: '#c62828', ear: '#ef5350', price: 50 },
+];
+
+const panSkins = [
+  { id: 'classic', name: 'Classic Pan', emoji: '🍳', price: 0, owned: true },
+  { id: 'wok', name: 'Wok', emoji: '🥘', price: 15 },
+  { id: 'pot', name: 'Magic Pot', emoji: '🍲', price: 25 },
+  { id: 'fire', name: 'Fire Grill', emoji: '🔥', price: 35 },
+  { id: 'sparkle', name: 'Sparkle Pan', emoji: '✨', price: 50 },
+];
+
+let currentPigSkin = pigSkins[0];
+let currentPanSkin = panSkins[0];
+
+// ========= DOM =========
+const moneyDisplay = document.getElementById('money-display');
+const baconDisplay = document.getElementById('bacon-display');
+const fryingPan = document.getElementById('frying-pan');
+const messageEl = document.getElementById('message');
+
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+
+// ========= SCREENS =========
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  currentScreen = name;
+
+  if (name === 'yard') {
+    piggiesInKitchen = 0;
+    pickedUpPiggies = [];
+    spawnYardPiggies(4); // 4 piggies to chase!
+  } else if (name === 'kitchen') {
+    if (pickedUpPiggies.length > 0) {
+      piggiesInKitchen += pickedUpPiggies.length;
+      pickedUpPiggies = [];
+    }
+    spawnCustomers();
+  }
+  updateCookLabel();
+}
+
+function showMessage(text) {
+  messageEl.textContent = text;
+  messageEl.classList.add('show');
+  setTimeout(() => messageEl.classList.remove('show'), 1500);
+}
+
+// ========= YARD =========
+document.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+document.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  mouseX = e.touches[0].clientX;
+  mouseY = e.touches[0].clientY;
+}, { passive: false });
+
+// Click anywhere on the yard — pick up the closest piggy (can carry multiple!)
+document.getElementById('yard').addEventListener('click', (e) => {
+  if (currentScreen !== 'yard') return;
+
+  // Find the closest FREE piggy to the click (not already picked up)
+  let closest = null;
+  let closestDist = Infinity;
+  for (const pig of yardPiggies) {
+    if (pickedUpPiggies.includes(pig)) continue; // already holding this one
+    const d = Math.hypot(e.clientX - pig.x, e.clientY - pig.y);
+    if (d < closestDist) { closestDist = d; closest = pig; }
+  }
+
+  if (closest && closestDist < 80) {
+    pickedUpPiggies.push(closest);
+    closest.el.classList.add('picked-up');
+    playScaredOink();
+    pigSays(pigPhrases[Math.floor(Math.random() * pigPhrases.length)]);
+    const count = pickedUpPiggies.length;
+    showMessage(count === 1 ? 'Piggy picked up! Catch more or go to the kitchen!' : count + ' piggies! Go to the kitchen!');
+    // Oink for 10 seconds
+    let oinkCount = 0;
+    const oinkLoop = setInterval(() => {
+      oinkCount++;
+      playOink();
+      if (oinkCount >= 20) clearInterval(oinkLoop);
+    }, 500);
+  }
+});
+
+// House button
+document.getElementById('house-btn').addEventListener('click', () => {
+  if (pickedUpPiggies.length === 0) {
+    showMessage('Catch a piggy first!');
+    return;
+  }
+  showScreen('kitchen');
+});
+document.getElementById('house-label').addEventListener('click', () => {
+  document.getElementById('house-btn').click();
+});
+
+// ========= KITCHEN =========
+function updateCookLabel() {
+  const label = document.getElementById('cook-label');
+  if (piggiesInKitchen > 0) {
+    label.textContent = piggiesInKitchen === 1 ? 'Click the pan to cook!' : piggiesInKitchen + ' piggies ready to cook!';
+  } else {
+    label.textContent = 'Bring a piggy here first!';
+  }
+  const sb = document.getElementById('sell-btn');
+  sb.disabled = baconCount === 0;
+  sb.textContent = baconCount > 0 ? `Sell ${baconCount} Bacon ($${baconCount * 5})` : 'Sell Bacon';
+}
+
+fryingPan.addEventListener('click', () => {
+  if (piggiesInKitchen <= 0) {
+    showMessage('Go catch a piggy first!');
+    return;
+  }
+
+  playSizzle();
+  fryingPan.classList.remove('cooking');
+  void fryingPan.offsetWidth;
+  fryingPan.classList.add('cooking');
+
+  const bacon = document.createElement('div');
+  bacon.className = 'bacon-pop';
+  bacon.textContent = '🥓';
+  const panRect = fryingPan.getBoundingClientRect();
+  bacon.style.left = (panRect.left + panRect.width / 2 - 20) + 'px';
+  bacon.style.top = (panRect.top - 50) + 'px';
+  document.body.appendChild(bacon);
+  setTimeout(() => bacon.remove(), 1000);
+
+  baconCount++;
+  piggiesInKitchen--;
+  updateHUD();
+  updateCookLabel();
+  showMessage(piggiesInKitchen > 0 ? 'Bacon made! ' + piggiesInKitchen + ' piggies left!' : 'Bacon made! 🥓');
+});
+
+// ========= CUSTOMERS =========
+const personStyles = [
+  { skin: '#FDBCB4', hair: '#4a2c0a', shirt: '#e53935', pants: '#1565C0', shoe: '#333' },
+  { skin: '#D2956A', hair: '#1a1a1a', shirt: '#43A047', pants: '#37474F', shoe: '#222' },
+  { skin: '#F5D0A9', hair: '#c6a050', shirt: '#7B1FA2', pants: '#455A64', shoe: '#4a3020' },
+  { skin: '#8D5524', hair: '#0d0d0d', shirt: '#FB8C00', pants: '#263238', shoe: '#1a1a1a' },
+  { skin: '#FDBCB4', hair: '#b03020', shirt: '#1E88E5', pants: '#4E342E', shoe: '#333' },
+  { skin: '#C68642', hair: '#2d1a0e', shirt: '#EC407A', pants: '#37474F', shoe: '#222' },
+  { skin: '#F5D0A9', hair: '#8B4513', shirt: '#00ACC1', pants: '#3E2723', shoe: '#1a1a1a' },
+  { skin: '#FDBCB4', hair: '#1a1a1a', shirt: '#FFB300', pants: '#1565C0', shoe: '#333' },
+];
+const thankYouPhrases = [
+  'Thank you!', 'Yum! Thanks!', 'Delicious bacon!', 'Mmm, so good!',
+  'Best bacon ever!', 'Thank you so much!', 'Wow, amazing!', 'I love it! Thanks!',
+];
+const customerTable = document.getElementById('customer-table');
+
+function makePerson(style) {
+  return `
+    <div class="person-body">
+      <div class="person-hair" style="background:${style.hair}"></div>
+      <div class="person-head" style="background:${style.skin}">
+        <div class="person-eyes"><div class="person-eye"></div><div class="person-eye"></div></div>
+        <div class="person-mouth"></div>
+      </div>
+      <div class="person-arm left-arm" style="background:${style.skin}"></div>
+      <div class="person-arm right-arm" style="background:${style.skin}"></div>
+      <div class="person-torso" style="background:${style.shirt}"></div>
+      <div class="person-legs">
+        <div class="person-leg" style="background:${style.pants};position:relative"><div class="person-shoe" style="background:${style.shoe}"></div></div>
+        <div class="person-leg" style="background:${style.pants};position:relative"><div class="person-shoe" style="background:${style.shoe}"></div></div>
+      </div>
+    </div>
+  `;
+}
+
+function spawnCustomers() {
+  customerTable.innerHTML = '';
+  const count = 4 + Math.floor(Math.random() * 3);
+  const used = [];
+  for (let i = 0; i < count; i++) {
+    let idx;
+    do { idx = Math.floor(Math.random() * personStyles.length); } while (used.includes(idx));
+    used.push(idx);
+    const style = personStyles[idx];
+    const div = document.createElement('div');
+    div.className = 'customer waiting';
+    div.innerHTML = `
+      <div class="speech"></div>
+      ${makePerson(style)}
+    `;
+    div.dataset.styleIdx = idx;
+    div.addEventListener('click', () => serveBacon(div));
+    customerTable.appendChild(div);
+  }
+}
+
+function serveBacon(customerEl) {
+  if (baconCount <= 0) {
+    showMessage('Cook some bacon first!');
+    return;
+  }
+
+  baconCount--;
+  const earned = 5;
+  money += earned;
+
+  customerEl.classList.remove('waiting');
+  customerEl.classList.add('happy');
+  const speech = customerEl.querySelector('.speech');
+  const phrase = thankYouPhrases[Math.floor(Math.random() * thankYouPhrases.length)];
+  speech.textContent = phrase;
+  speech.classList.add('show');
+
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(phrase);
+    utter.pitch = 0.8 + Math.random() * 0.8;
+    utter.rate = 1.0;
+    utter.volume = 0.7;
+    speechSynthesis.speak(utter);
+  }
+
+  const rect = customerEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top;
+  for (let i = 0; i < 6; i++) {
+    setTimeout(() => {
+      const m = document.createElement('div');
+      m.className = 'money-rain';
+      m.textContent = ['💵', '💰', '💲', '🪙'][Math.floor(Math.random() * 4)];
+      m.style.left = (cx + (Math.random() - 0.5) * 80) + 'px';
+      m.style.top = (cy + Math.random() * 20) + 'px';
+      document.body.appendChild(m);
+      setTimeout(() => m.remove(), 1200);
+    }, i * 100);
+  }
+
+  updateHUD();
+  updateCookLabel();
+
+  setTimeout(() => {
+    speech.classList.remove('show');
+    const body = customerEl.querySelector('.person-body');
+    body.style.opacity = '0';
+    body.style.transition = 'opacity 0.5s';
+    setTimeout(() => {
+      const newIdx = Math.floor(Math.random() * personStyles.length);
+      const newStyle = personStyles[newIdx];
+      const newBody = makePerson(newStyle);
+      body.remove();
+      const speechEl = customerEl.querySelector('.speech');
+      speechEl.insertAdjacentHTML('afterend', newBody);
+      customerEl.querySelector('.person-body').style.opacity = '0';
+      customerEl.querySelector('.person-body').style.transition = 'opacity 0.5s';
+      setTimeout(() => { customerEl.querySelector('.person-body').style.opacity = '1'; }, 50);
+      customerEl.classList.remove('happy');
+      customerEl.classList.add('waiting');
+    }, 800);
+  }, 1500);
+}
+
+// Sell bacon button
+const sellBtn = document.getElementById('sell-btn');
+sellBtn.addEventListener('click', () => {
+  if (baconCount === 0) return;
+  const earned = baconCount * 5;
+  money += earned;
+  const popup = document.createElement('div');
+  popup.className = 'sell-popup';
+  popup.textContent = `+$${earned}`;
+  popup.style.left = '50%';
+  popup.style.top = '40%';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 1000);
+  baconCount = 0;
+  updateHUD();
+  updateCookLabel();
+  showMessage(`Sold for $${earned}!`);
+});
+
+document.getElementById('back-to-yard').addEventListener('click', () => showScreen('yard'));
+document.getElementById('go-shop').addEventListener('click', () => {
+  showScreen('shop');
+  renderShop();
+});
+
+// ========= SHOP =========
+function renderShop() {
+  const pigContainer = document.getElementById('pig-skins');
+  const panContainer = document.getElementById('pan-skins');
+  pigContainer.innerHTML = '';
+  panContainer.innerHTML = '';
+
+  pigSkins.forEach(skin => {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    if (skin.owned) div.classList.add('owned');
+    if (skin.id === currentPigSkin.id) div.classList.add('selected');
+    div.innerHTML = `
+      <div class="preview" style="width:50px;height:40px;background:${skin.color};border-radius:50%;margin:0 auto 6px;"></div>
+      <div class="item-name">${skin.name}</div>
+      <div class="item-price ${skin.price === 0 ? 'free' : ''}">${skin.owned ? (skin.id === currentPigSkin.id ? 'Using' : 'Owned') : '$' + skin.price}</div>
+    `;
+    div.addEventListener('click', () => {
+      if (skin.owned) {
+        currentPigSkin = skin;
+        applyPigSkin();
+        renderShop();
+      } else if (money >= skin.price) {
+        money -= skin.price;
+        skin.owned = true;
+        currentPigSkin = skin;
+        applyPigSkin();
+        updateHUD();
+        renderShop();
+        showMessage(`Bought ${skin.name}!`);
+      } else {
+        showMessage('Not enough money!');
+      }
+    });
+    pigContainer.appendChild(div);
+  });
+
+  panSkins.forEach(skin => {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    if (skin.owned) div.classList.add('owned');
+    if (skin.id === currentPanSkin.id) div.classList.add('selected');
+    div.innerHTML = `
+      <div class="preview">${skin.emoji}</div>
+      <div class="item-name">${skin.name}</div>
+      <div class="item-price ${skin.price === 0 ? 'free' : ''}">${skin.owned ? (skin.id === currentPanSkin.id ? 'Using' : 'Owned') : '$' + skin.price}</div>
+    `;
+    div.addEventListener('click', () => {
+      if (skin.owned) {
+        currentPanSkin = skin;
+        fryingPan.textContent = skin.emoji;
+        renderShop();
+      } else if (money >= skin.price) {
+        money -= skin.price;
+        skin.owned = true;
+        currentPanSkin = skin;
+        fryingPan.textContent = skin.emoji;
+        updateHUD();
+        renderShop();
+        showMessage(`Bought ${skin.name}!`);
+      } else {
+        showMessage('Not enough money!');
+      }
+    });
+    panContainer.appendChild(div);
+  });
+}
+
+document.getElementById('shop-back').addEventListener('click', () => showScreen('kitchen'));
+
+// ========= CASH OUT =========
+const cashoutOverlay = document.getElementById('cashout-overlay');
+const cashoutMain = document.getElementById('cashout-main');
+const cashoutSuccess = document.getElementById('cashout-success');
+
+document.getElementById('money-hud').addEventListener('click', () => {
+  if (money <= 0) {
+    showMessage('No money to cash out yet!');
+    return;
+  }
+  document.getElementById('cashout-amount').textContent = '$' + money;
+  cashoutMain.style.display = 'block';
+  cashoutSuccess.classList.remove('show');
+  cashoutOverlay.classList.add('show');
+});
+
+document.querySelectorAll('.cashout-method[data-method]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const method = btn.dataset.method;
+    document.getElementById('success-amount').textContent = '$' + money;
+    document.getElementById('success-label').textContent = 'Sent to your ' + method;
+    cashoutMain.style.display = 'none';
+    cashoutSuccess.classList.add('show');
+    money = 0;
+    updateHUD();
+  });
+});
+
+document.getElementById('double-money').addEventListener('click', () => {
+  money = money * 2;
+  updateHUD();
+  document.getElementById('cashout-amount').textContent = '$' + money;
+  showMessage('DOUBLED! You have $' + money + '!');
+});
+
+document.getElementById('cashout-cancel').addEventListener('click', () => {
+  cashoutOverlay.classList.remove('show');
+});
+
+document.getElementById('cashout-done').addEventListener('click', () => {
+  cashoutOverlay.classList.remove('show');
+});
+
+// ========= SKINS =========
+function applyPigSkin() {
+  // Apply skin to all piggies currently in the yard
+  yardPiggies.forEach(pig => applyPigSkinToElement(pig.el));
+}
+
+// ========= HUD =========
+function updateHUD() {
+  moneyDisplay.textContent = '$' + money;
+  baconDisplay.textContent = baconCount + ' 🥓';
+}
+
+// ========= ANIMATION LOOP (handles all piggies) =========
+function animate() {
+  if (currentScreen === 'yard') {
+    for (const pig of yardPiggies) {
+      const dx = mouseX - pig.x;
+      const dy = mouseY - pig.y;
+      const dist = Math.hypot(dx, dy);
+
+      const isHeld = pickedUpPiggies.includes(pig);
+
+      // Random idle oinks
+      pig.oinkTimer--;
+      if (pig.oinkTimer <= 0 && !isHeld) {
+        if (Math.random() < 0.3) playOink();
+        pig.oinkTimer = 120 + Math.random() * 300;
+      }
+
+      if (isHeld) {
+        // Picked up — follow the mouse with a small offset so they don't stack
+        const idx = pickedUpPiggies.indexOf(pig);
+        const offsetX = (idx - (pickedUpPiggies.length - 1) / 2) * 50;
+        const targetX = mouseX + offsetX;
+        const targetY = mouseY - idx * 15;
+        pig.x += (targetX - pig.x) * 0.15;
+        pig.y += (targetY - pig.y) * 0.15;
+        pig.isEating = false;
+      } else {
+        const scareRadius = 180;
+
+        if (dist < scareRadius) {
+          pig.isEating = false;
+          if (Math.random() < 0.02) playOink();
+          const push = (scareRadius - dist) / scareRadius;
+          pig.vx -= (dx / dist) * push * 0.25;
+          pig.vy -= (dy / dist) * push * 0.25;
+        } else {
+          pig.wanderTimer--;
+          pig.eatingTimer--;
+
+          if (pig.eatingTimer <= 0 && !pig.isEating && Math.random() < 0.008) {
+            pig.isEating = true;
+            pig.eatingTimer = 80 + Math.random() * 120;
+            pig.vx = 0;
+            pig.vy = 0;
+          }
+
+          if (pig.isEating) {
+            pig.eatingTimer--;
+            if (pig.eatingTimer <= 0) pig.isEating = false;
+          } else if (pig.wanderTimer <= 0) {
+            const angle = Math.random() * Math.PI * 2;
+            pig.wanderDirX = Math.cos(angle) * 0.3;
+            pig.wanderDirY = Math.sin(angle) * 0.3;
+            pig.wanderTimer = 60 + Math.random() * 120;
+          }
+
+          if (!pig.isEating) {
+            pig.vx += pig.wanderDirX * 0.05;
+            pig.vy += pig.wanderDirY * 0.05;
+          }
+        }
+
+        pig.vx *= 0.95;
+        pig.vy *= 0.95;
+        pig.x += pig.vx;
+        pig.y += pig.vy;
+
+        // Keep on screen
+        const margin = 60;
+        if (pig.x < margin) { pig.x = margin; pig.vx *= -0.5; pig.wanderDirX *= -1; }
+        if (pig.x > window.innerWidth - margin) { pig.x = window.innerWidth - margin; pig.vx *= -0.5; pig.wanderDirX *= -1; }
+        if (pig.y < window.innerHeight * 0.5) { pig.y = window.innerHeight * 0.5; pig.vy *= -0.5; pig.wanderDirY *= -1; }
+        if (pig.y > window.innerHeight - margin) { pig.y = window.innerHeight - margin; pig.vy *= -0.5; pig.wanderDirY *= -1; }
+      }
+
+      // Face direction
+      const faceDX = isHeld ? dx : pig.vx;
+      const scaleX = faceDX < -0.1 ? -1 : 1;
+
+      // Leg animation
+      const speed = Math.hypot(pig.vx, pig.vy);
+      const isMoving = isHeld ? dist > 3 : (speed > 0.5 && !pig.isEating);
+      if (isMoving !== pig.moving) {
+        pig.moving = isMoving;
+        if (isMoving) pig.el.classList.remove('stopped');
+        else pig.el.classList.add('stopped');
+      }
+
+      pig.el.style.transform = `translate(${pig.x - 40}px, ${pig.y - 35}px) scaleX(${scaleX})`;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// ========= START =========
+spawnYardPiggies(4);
+requestAnimationFrame(animate);
+updateHUD();
+
+// Allow direct screen access via URL hash (for screenshots/testing)
+if (location.hash === '#kitchen') { showScreen('kitchen'); }
+</script>
+</body>
+</html>

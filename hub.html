@@ -7,9 +7,9 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #2d0a1a;
+    background: #f5a0bf;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    color: white;
+    color: #4a0a2a;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -19,12 +19,12 @@
     content: '';
     position: fixed; inset: 0;
     background-image:
-      radial-gradient(ellipse 36px 28px at 50% 50%, #f4a0b8 60%, transparent 61%),
-      radial-gradient(circle 7px at 36% 40%, #d06080 100%),
-      radial-gradient(circle 7px at 64% 40%, #d06080 100%);
+      radial-gradient(ellipse 36px 28px at 50% 50%, #ffcce0 60%, transparent 61%),
+      radial-gradient(circle 7px at 36% 40%, #f08ab0 100%),
+      radial-gradient(circle 7px at 64% 40%, #f08ab0 100%);
     background-size: 90px 90px;
     background-position: 0 0;
-    opacity: 0.07;
+    opacity: 0.15;
     pointer-events: none;
     z-index: 0;
   }
@@ -52,7 +52,7 @@
   }
   .hub-subtitle {
     font-size: 16px;
-    color: #aaa;
+    color: #8a3060;
     margin-top: 6px;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -98,7 +98,7 @@
     font-weight: 700;
     letter-spacing: 4px;
     text-transform: uppercase;
-    color: #777;
+    color: #9a4070;
     margin: 10px 0 16px;
     display: flex;
     align-items: center;
@@ -110,7 +110,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #333;
+    background: #e890b0;
   }
 
   /* ========= GRID ========= */
@@ -125,11 +125,11 @@
 
   /* ========= GAME CARD ========= */
   .game-card {
-    background: linear-gradient(145deg, #2a1020, #1a0f1a);
+    background: linear-gradient(145deg, #fff0f5, #ffe0ed);
     border-radius: 18px;
     padding: 20px 14px 16px;
     text-align: center;
-    border: 2px solid #4a1a3a;
+    border: 2px solid #f0a0c0;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     position: relative;
@@ -143,13 +143,13 @@
     pointer-events: none;
   }
   .game-card.playable {
-    border-color: #aa3a6a;
-    background: linear-gradient(145deg, #2e102a, #1a1030);
+    border-color: #ff6b9d;
+    background: linear-gradient(145deg, #fff5f8, #ffe8f0);
   }
   .game-card.playable:hover {
     transform: translateY(-6px) scale(1.03);
-    box-shadow: 0 16px 40px rgba(255, 100, 150, 0.3);
-    border-color: #ff6b9d;
+    box-shadow: 0 16px 40px rgba(255, 100, 150, 0.4);
+    border-color: #ff3d7f;
   }
   .game-card.coming-soon {
     opacity: 0.6;
@@ -175,7 +175,7 @@
   .card-name {
     font-size: 14px;
     font-weight: 800;
-    color: #eee;
+    color: #4a0a2a;
     margin-bottom: 8px;
     line-height: 1.2;
   }
@@ -217,8 +217,8 @@
     opacity: 0.95;
   }
   .play-btn.inactive {
-    background: #2a2a3a;
-    color: #555;
+    background: #e0c0d0;
+    color: #a06080;
     cursor: not-allowed;
     font-size: 11px;
     letter-spacing: 0.5px;
@@ -279,7 +279,7 @@
       <span class="card-emoji">🍳</span>
       <div class="card-name">Piggies to Bacon (Classic)</div>
       <div class="player-badge">👤 The very first one!</div>
-      <a class="play-btn active" href="../frankies-first-game/index.html">▶ PLAY</a>
+      <a class="play-btn active" href="classic.html">▶ PLAY</a>
     </div>
 
     <!-- Game 1: Piggies to Bacon -->
@@ -314,9 +314,9 @@
   <!-- COMING SOON -->
   <div class="section-label">🔒 Coming Soon</div>
   <div class="games-grid">
-    <div class="game-card coming-soon"><span class="card-emoji">🏎️</span><div class="card-name">Pig Racer</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
-    <div class="game-card coming-soon"><span class="card-emoji">🏗️</span><div class="card-name">Pig Tower</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
-    <div class="game-card coming-soon"><span class="card-emoji">🎨</span><div class="card-name">Piggy Painter</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🏎️</span><div class="card-name">Pig Racer</div><div class="player-badge">👤 Race your pig!</div><a class="play-btn active" href="pig-racer.html">▶ PLAY</a></div>
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🏗️</span><div class="card-name">Pig Tower</div><div class="player-badge">👤 Stack 'em up!</div><a class="play-btn active" href="pig-tower.html">▶ PLAY</a></div>
+    <div class="game-card playable"><span class="new-badge">NEW</span><span class="card-emoji">🎨</span><div class="card-name">Piggy Painter</div><div class="player-badge">👤 Paint a pig!</div><a class="play-btn active" href="piggy-painter.html">▶ PLAY</a></div>
     <div class="game-card coming-soon"><span class="card-emoji">🎯</span><div class="card-name">Oink Quiz</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
     <div class="game-card coming-soon"><span class="card-emoji">💦</span><div class="card-name">Mud Splash</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>
     <div class="game-card coming-soon"><span class="card-emoji">🦘</span><div class="card-name">Pig Jump</div><div class="player-badge">👤 0 playing</div><button class="play-btn inactive" disabled>COMING SOON</button></div>

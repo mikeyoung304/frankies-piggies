@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 Piggy Painter</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --pink: #ff6b9d;
+    --hot: #ff3d7f;
+    --orange: #ff9f43;
+    --yellow: #ffd32a;
+    --ink: #4a0a2a;
+    --soft: #fff2f7;
+    --panel: rgba(255, 255, 255, 0.88);
+  }
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.5) 0 42px, transparent 43px),
+      radial-gradient(circle at 82% 18%, rgba(255,255,255,0.35) 0 34px, transparent 35px),
+      linear-gradient(180deg, #ffaccb 0%, #ffc8da 48%, #fff0f6 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    user-select: none;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 36px 28px at 50% 50%, rgba(255,255,255,0.3) 60%, transparent 61%),
+      radial-gradient(circle 7px at 36% 40%, rgba(255,255,255,0.35) 100%, transparent 101%),
+      radial-gradient(circle 7px at 64% 40%, rgba(255,255,255,0.35) 100%, transparent 101%);
+    background-size: 96px 96px;
+    pointer-events: none;
+  }
+  a { color: inherit; text-decoration: none; }
+  button {
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+    color: inherit;
+  }
+  .app {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    padding: 16px clamp(12px, 3vw, 26px) 28px;
+    position: relative;
+    z-index: 1;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .home-btn,
+  .action-btn {
+    min-height: 42px;
+    border-radius: 999px;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 2px solid rgba(255, 107, 157, 0.35);
+    font-weight: 900;
+    box-shadow: 0 8px 18px rgba(255, 107, 157, 0.22);
+  }
+  .home-btn:hover,
+  .action-btn:hover { transform: translateY(-1px); }
+  .title-wrap { text-align: center; flex: 1; }
+  .title {
+    font-size: clamp(34px, 7vw, 66px);
+    font-weight: 1000;
+    line-height: 0.95;
+    letter-spacing: 1px;
+    background: linear-gradient(135deg, var(--hot), var(--orange), var(--yellow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #8a3060;
+  }
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 258px;
+    gap: 14px;
+    align-items: start;
+  }
+  .paint-stage {
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.42);
+    border: 2px solid rgba(255, 107, 157, 0.26);
+    border-radius: 22px;
+    padding: clamp(10px, 2vw, 16px);
+    box-shadow: 0 18px 45px rgba(186, 58, 103, 0.2);
+  }
+  .canvas-wrap {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100vh - 160px);
+    min-height: 360px;
+    border-radius: 18px;
+    overflow: hidden;
+    background:
+      linear-gradient(45deg, rgba(255,255,255,0.45) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(255,255,255,0.45) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.45) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.45) 75%),
+      #fff8fb;
+    background-size: 28px 28px;
+    background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+    box-shadow: inset 0 0 0 3px rgba(255, 107, 157, 0.28);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .side-panel {
+    display: grid;
+    gap: 12px;
+  }
+  .tool-panel {
+    background: var(--panel);
+    border: 2px solid rgba(255, 107, 157, 0.28);
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 12px 28px rgba(186, 58, 103, 0.16);
+  }
+  .panel-title {
+    margin-bottom: 9px;
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8a3060;
+  }
+  .gallery-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 9px;
+  }
+  .gallery-head .panel-title { margin-bottom: 0; }
+  .tiny-btn {
+    min-width: 38px;
+    min-height: 32px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid #ffd1df;
+    font-size: 17px;
+    font-weight: 900;
+  }
+  .tool-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    border-radius: 14px;
+    background: #fff;
+    border: 2px solid #ffd1df;
+    font-size: 16px;
+    font-weight: 900;
+  }
+  .tool-btn.active {
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    border-color: #ff3d7f;
+    color: white;
+    box-shadow: 0 8px 20px rgba(255, 107, 157, 0.35);
+  }
+  .swatches,
+  .stickers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .swatch {
+    aspect-ratio: 1;
+    min-height: 42px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px rgba(74, 10, 42, 0.12), 0 8px 16px rgba(186, 58, 103, 0.14);
+  }
+  .swatch.active {
+    box-shadow: 0 0 0 4px var(--ink), 0 8px 16px rgba(186, 58, 103, 0.14);
+  }
+  .sticker-btn {
+    aspect-ratio: 1;
+    min-height: 44px;
+    border-radius: 14px;
+    background: #fff;
+    border: 2px solid #ffd1df;
+    font-size: 25px;
+  }
+  .sticker-btn.active {
+    background: #fff0a6;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.28);
+  }
+  .size-line {
+    display: grid;
+    grid-template-columns: 34px 1fr 40px;
+    gap: 8px;
+    align-items: center;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--pink); }
+  .size-preview {
+    width: var(--dot-size);
+    height: var(--dot-size);
+    max-width: 36px;
+    max-height: 36px;
+    justify-self: center;
+    border-radius: 50%;
+    background: var(--active-color);
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px rgba(74, 10, 42, 0.15);
+  }
+  .command-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .command-grid .action-btn {
+    min-height: 46px;
+    border-radius: 15px;
+    padding: 0 10px;
+    background: linear-gradient(135deg, #fff, #fff2f7);
+  }
+  .command-grid .save {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white;
+    border-color: transparent;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .thumb {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    border: 2px solid #ffd1df;
+  }
+  .thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .empty-gallery {
+    grid-column: 1 / -1;
+    min-height: 72px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    color: #9a4070;
+    font-weight: 900;
+    text-align: center;
+    padding: 10px;
+  }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translate(-50%, 120%);
+    z-index: 10;
+    min-width: min(360px, calc(100vw - 32px));
+    border-radius: 999px;
+    padding: 14px 20px;
+    background: var(--ink);
+    color: white;
+    font-weight: 1000;
+    text-align: center;
+    box-shadow: 0 16px 38px rgba(74, 10, 42, 0.35);
+    transition: transform 0.22s ease;
+  }
+  .toast.show { transform: translate(-50%, 0); }
+  .sparkle {
+    position: fixed;
+    z-index: 9;
+    pointer-events: none;
+    font-size: 28px;
+    animation: sparkle-pop 850ms ease-out forwards;
+  }
+  @keyframes sparkle-pop {
+    0% { transform: translateY(0) scale(0.7) rotate(0deg); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-80px) scale(1.4) rotate(24deg); opacity: 0; }
+  }
+  @media (max-width: 860px) {
+    .workspace { grid-template-columns: 1fr; }
+    .side-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tool-panel.commands-panel,
+    .tool-panel.gallery-panel { grid-column: 1 / -1; }
+    .canvas-wrap { min-height: 300px; max-height: none; }
+  }
+  @media (max-width: 560px) {
+    .topbar { align-items: stretch; flex-wrap: wrap; }
+    .title-wrap { order: -1; flex-basis: 100%; }
+    .home-btn,
+    .topbar .action-btn { flex: 1; text-align: center; display: grid; place-items: center; }
+    .side-panel { grid-template-columns: 1fr; }
+    .canvas-wrap { min-height: 260px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <a class="home-btn" href="hub.html">← Piggy World</a>
+    <div class="title-wrap">
+      <div class="title">🎨 Piggy Painter</div>
+      <div class="subtitle">Make a masterpiece</div>
+    </div>
+    <button class="action-btn" id="surprise-btn" type="button">🎲 Surprise</button>
+  </div>
+
+  <main class="workspace">
+    <section class="paint-stage" aria-label="Painting area">
+      <div class="canvas-wrap">
+        <canvas id="paint-canvas" width="960" height="720" aria-label="Piggy painting canvas"></canvas>
+      </div>
+    </section>
+
+    <aside class="side-panel" aria-label="Painter tools">
+      <section class="tool-panel">
+        <div class="panel-title">Tool</div>
+        <div class="tool-row">
+          <button class="tool-btn active" data-tool="brush" type="button" title="Draw">🖌️ Draw</button>
+          <button class="tool-btn" data-tool="eraser" type="button" title="Erase">🧽 Erase</button>
+        </div>
+      </section>
+
+      <section class="tool-panel">
+        <div class="panel-title">Color</div>
+        <div class="swatches" id="swatches"></div>
+      </section>
+
+      <section class="tool-panel">
+        <div class="panel-title">Size</div>
+        <div class="size-line">
+          <span>🐜</span>
+          <input id="brush-size" type="range" min="6" max="46" value="20">
+          <span>🐘</span>
+        </div>
+        <div class="size-preview" id="size-preview"></div>
+      </section>
+
+      <section class="tool-panel">
+        <div class="panel-title">Stickers</div>
+        <div class="stickers" id="stickers"></div>
+      </section>
+
+      <section class="tool-panel commands-panel">
+        <div class="panel-title">Actions</div>
+        <div class="command-grid">
+          <button class="action-btn" id="new-pig-btn" type="button">🐷 New</button>
+          <button class="action-btn" id="clear-btn" type="button">🧼 Clear</button>
+          <button class="action-btn save" id="save-btn" type="button">💾 Save Masterpiece</button>
+        </div>
+      </section>
+
+      <section class="tool-panel gallery-panel">
+        <div class="gallery-head">
+          <div class="panel-title">Gallery</div>
+          <button class="tiny-btn" id="clear-gallery-btn" type="button" title="Clear gallery">🗑️</button>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const canvas = document.getElementById('paint-canvas');
+const ctx = canvas.getContext('2d');
+const swatchesEl = document.getElementById('swatches');
+const stickersEl = document.getElementById('stickers');
+const sizeInput = document.getElementById('brush-size');
+const sizePreview = document.getElementById('size-preview');
+const toastEl = document.getElementById('toast');
+const galleryEl = document.getElementById('gallery');
+
+const COLORS = [
+  '#ff6b9d', '#ff9f43', '#ffd32a', '#7bed9f',
+  '#70a1ff', '#a29bfe', '#ffffff', '#4a0a2a',
+  '#ff4757', '#2ed573', '#1e90ff', '#8e44ad'
+];
+const STICKERS = ['🐷', '🐽', '🌈', '⭐', '💖', '🌸', '🥓', '👑'];
+const GALLERY_KEY = 'piggyPainterGallery';
+
+let activeColor = COLORS[0];
+let brushSize = Number(sizeInput.value);
+let activeTool = 'brush';
+let activeSticker = null;
+let drawing = false;
+let lastPoint = null;
+let toastTimer = null;
+
+function safeLoadGallery() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GALLERY_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveGallery(gallery) {
+  localStorage.setItem(GALLERY_KEY, JSON.stringify(gallery.slice(0, 6)));
+}
+
+function resizeCanvasToDisplay() {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = Math.max(1, window.devicePixelRatio || 1);
+  const nextWidth = Math.round(rect.width * ratio);
+  const nextHeight = Math.round(rect.height * ratio);
+  if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+
+  const oldImage = document.createElement('canvas');
+  oldImage.width = canvas.width;
+  oldImage.height = canvas.height;
+  oldImage.getContext('2d').drawImage(canvas, 0, 0);
+
+  canvas.width = nextWidth;
+  canvas.height = nextHeight;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(oldImage, 0, 0, nextWidth, nextHeight);
+}
+
+function drawPigGuide() {
+  resizeCanvasToDisplay();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2 + h * 0.03;
+  const bodyW = w * 0.56;
+  const bodyH = h * 0.48;
+
+  ctx.save();
+  ctx.fillStyle = '#fff8fb';
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = '#ffe0ed';
+  ctx.strokeStyle = '#e88aae';
+  ctx.lineWidth = Math.max(5, w * 0.008);
+
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx - bodyW * 0.28, cy - bodyH * 0.33, bodyW * 0.12, 0, Math.PI * 2);
+  ctx.arc(cx + bodyW * 0.28, cy - bodyH * 0.33, bodyW * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffc0d3';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + bodyH * 0.04, bodyW * 0.2, bodyH * 0.13, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#9a4070';
+  ctx.beginPath();
+  ctx.arc(cx - bodyW * 0.16, cy - bodyH * 0.08, bodyW * 0.025, 0, Math.PI * 2);
+  ctx.arc(cx + bodyW * 0.16, cy - bodyH * 0.08, bodyW * 0.025, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx - bodyW * 0.06, cy + bodyH * 0.04, bodyW * 0.018, 0, Math.PI * 2);
+  ctx.arc(cx + bodyW * 0.06, cy + bodyH * 0.04, bodyW * 0.018, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(154, 64, 112, 0.35)';
+  ctx.lineWidth = Math.max(3, w * 0.005);
+  ctx.beginPath();
+  ctx.arc(cx, cy + bodyH * 0.1, bodyW * 0.12, 0.15, Math.PI - 0.15);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function setCssVars() {
+  document.documentElement.style.setProperty('--active-color', activeColor);
+  document.documentElement.style.setProperty('--dot-size', Math.max(10, brushSize) + 'px');
+}
+
+function showToast(message) {
+  toastEl.textContent = message;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1400);
+}
+
+function getPointFromClient(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function paintLine(from, to) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = brushSize * Math.max(1, window.devicePixelRatio || 1);
+
+  if (activeTool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = activeColor;
+  }
+
+  ctx.beginPath();
+  if (Math.abs(from.x - to.x) < 0.5 && Math.abs(from.y - to.y) < 0.5) {
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.arc(from.x, from.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function stampSticker(point) {
+  if (!activeSticker) return;
+  ctx.save();
+  ctx.font = `${brushSize * 2.2 * Math.max(1, window.devicePixelRatio || 1)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(activeSticker, point.x, point.y);
+  ctx.restore();
+}
+
+function startDrawing(clientX, clientY) {
+  resizeCanvasToDisplay();
+  const point = getPointFromClient(clientX, clientY);
+  if (activeSticker) {
+    stampSticker(point);
+    sparkleAt(clientX, clientY);
+    return;
+  }
+  drawing = true;
+  lastPoint = point;
+  paintLine(point, point);
+}
+
+function keepDrawing(clientX, clientY) {
+  if (!drawing) return;
+  const point = getPointFromClient(clientX, clientY);
+  paintLine(lastPoint, point);
+  lastPoint = point;
+}
+
+function handleMouseDown(event) {
+  event.preventDefault();
+  startDrawing(event.clientX, event.clientY);
+}
+
+function handleMouseMove(event) {
+  if (!drawing) return;
+  event.preventDefault();
+  keepDrawing(event.clientX, event.clientY);
+}
+
+function handleTouchStart(event) {
+  event.preventDefault();
+  const touch = event.touches[0];
+  if (touch) startDrawing(touch.clientX, touch.clientY);
+}
+
+function handleTouchMove(event) {
+  if (!drawing) return;
+  event.preventDefault();
+  const touch = event.touches[0];
+  if (touch) keepDrawing(touch.clientX, touch.clientY);
+}
+
+function stopDrawing() {
+  drawing = false;
+  lastPoint = null;
+}
+
+function sparkleAt(x, y) {
+  const sparkle = document.createElement('div');
+  sparkle.className = 'sparkle';
+  sparkle.textContent = ['✨', '🌟', '💖', '⭐'][Math.floor(Math.random() * 4)];
+  sparkle.style.left = (x - 14) + 'px';
+  sparkle.style.top = (y - 14) + 'px';
+  document.body.appendChild(sparkle);
+  setTimeout(() => sparkle.remove(), 900);
+}
+
+function renderSwatches() {
+  swatchesEl.innerHTML = '';
+  COLORS.forEach(color => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'swatch' + (color === activeColor ? ' active' : '');
+    btn.style.background = color;
+    btn.title = color;
+    btn.addEventListener('click', () => {
+      activeColor = color;
+      activeTool = 'brush';
+      activeSticker = null;
+      renderTools();
+      renderSwatches();
+      renderStickers();
+      setCssVars();
+    });
+    swatchesEl.appendChild(btn);
+  });
+}
+
+function renderStickers() {
+  stickersEl.innerHTML = '';
+  STICKERS.forEach(sticker => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sticker-btn' + (sticker === activeSticker ? ' active' : '');
+    btn.textContent = sticker;
+    btn.title = `Sticker ${sticker}`;
+    btn.addEventListener('click', () => {
+      activeSticker = activeSticker === sticker ? null : sticker;
+      activeTool = 'brush';
+      renderTools();
+      renderStickers();
+    });
+    stickersEl.appendChild(btn);
+  });
+}
+
+function renderTools() {
+  document.querySelectorAll('[data-tool]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === activeTool && !activeSticker);
+  });
+}
+
+function renderGallery() {
+  const gallery = safeLoadGallery();
+  galleryEl.innerHTML = '';
+  if (!gallery.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-gallery';
+    empty.textContent = 'No paintings yet!';
+    galleryEl.appendChild(empty);
+    return;
+  }
+  gallery.forEach(src => {
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb';
+    const img = document.createElement('img');
+    img.alt = 'Saved Piggy Painter artwork';
+    img.src = src;
+    wrap.appendChild(img);
+    galleryEl.appendChild(wrap);
+  });
+}
+
+function savePainting() {
+  const gallery = safeLoadGallery();
+  const src = canvas.toDataURL('image/png');
+  gallery.unshift(src);
+  try {
+    saveGallery(gallery);
+    renderGallery();
+    showToast('Masterpiece saved! 🎨');
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => sparkleAt(80 + Math.random() * (window.innerWidth - 160), window.innerHeight - 90), i * 80);
+    }
+  } catch {
+    showToast('Gallery is full. Clear a painting soon!');
+  }
+}
+
+function clearGallery() {
+  localStorage.removeItem(GALLERY_KEY);
+  renderGallery();
+  showToast('Gallery cleaned up! 🧼');
+}
+
+function clearPainting() {
+  drawPigGuide();
+  showToast('Fresh piggy canvas! 🐷');
+}
+
+function surprisePaint() {
+  const oldColor = activeColor;
+  const oldSize = brushSize;
+  const colors = [...COLORS].sort(() => Math.random() - 0.5).slice(0, 5);
+  for (let i = 0; i < 45; i++) {
+    activeColor = colors[i % colors.length];
+    brushSize = 8 + Math.random() * 28;
+    const x = canvas.width * (0.18 + Math.random() * 0.64);
+    const y = canvas.height * (0.2 + Math.random() * 0.56);
+    paintLine({ x, y }, { x: x + Math.random() * 2, y: y + Math.random() * 2 });
+  }
+  activeColor = oldColor;
+  brushSize = oldSize;
+  showToast('Surprise sprinkles! ✨');
+}
+
+document.querySelectorAll('[data-tool]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeTool = btn.dataset.tool;
+    activeSticker = null;
+    renderTools();
+    renderStickers();
+  });
+});
+
+sizeInput.addEventListener('input', () => {
+  brushSize = Number(sizeInput.value);
+  setCssVars();
+});
+
+canvas.addEventListener('mousedown', handleMouseDown);
+canvas.addEventListener('mousemove', handleMouseMove);
+window.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseleave', stopDrawing);
+canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+window.addEventListener('touchend', stopDrawing);
+window.addEventListener('touchcancel', stopDrawing);
+
+document.getElementById('new-pig-btn').addEventListener('click', clearPainting);
+document.getElementById('clear-btn').addEventListener('click', clearPainting);
+document.getElementById('save-btn').addEventListener('click', savePainting);
+document.getElementById('surprise-btn').addEventListener('click', surprisePaint);
+document.getElementById('clear-gallery-btn').addEventListener('click', clearGallery);
+
+window.addEventListener('resize', () => {
+  resizeCanvasToDisplay();
+});
+
+renderTools();
+renderSwatches();
+renderStickers();
+setCssVars();
+drawPigGuide();
+renderGallery();
+</script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏗️ Pig Tower!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(180deg, #1a0a2e, #2d1b69, #1a0a2e);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    cursor: pointer;
+    user-select: none;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* Overlays */
+  .overlay {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .overlay.hidden { display: none; }
+
+  #start-screen {
+    background: linear-gradient(135deg, #1a0a2e, #2d1b69);
+  }
+  #start-screen h1 {
+    font-size: clamp(40px, 10vw, 80px);
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    margin-bottom: 10px;
+  }
+  #start-screen .subtitle {
+    font-size: 18px; color: #b8a0d8;
+    margin-bottom: 40px; letter-spacing: 2px;
+  }
+
+  .big-btn {
+    background: linear-gradient(135deg, #ff6b9d, #ff9f43);
+    color: white; border: none;
+    padding: 18px 50px; border-radius: 50px;
+    font-size: 24px; font-weight: 900;
+    cursor: pointer; letter-spacing: 2px;
+    box-shadow: 0 8px 30px rgba(255,107,157,0.4);
+    transition: transform 0.2s;
+  }
+  .big-btn:hover { transform: scale(1.08); }
+  .hint {
+    margin-top: 30px; color: #8a70b0;
+    font-size: 16px; text-align: center;
+  }
+
+  /* HUD */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: none;
+    justify-content: space-between;
+    padding: 12px 20px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .hud-box {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    padding: 8px 16px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .hud-box span { color: #ffd32a; }
+
+  /* Game Over */
+  #game-over {
+    background: rgba(0,0,0,0.85);
+  }
+  #game-over h1 {
+    font-size: clamp(30px, 8vw, 60px);
+    margin-bottom: 10px;
+  }
+  #game-over .result {
+    font-size: 22px; color: #ccc;
+    margin-bottom: 10px;
+  }
+  .trophy { font-size: 80px; margin-bottom: 20px; }
+  .final-score {
+    font-size: 48px; font-weight: 900; color: #ffd32a;
+    margin-bottom: 6px;
+  }
+  .score-label {
+    font-size: 13px; color: #888;
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 30px;
+  }
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .small-btn {
+    background: linear-gradient(135deg, #6b5ce7, #a855f7);
+    color: white; border: none;
+    padding: 12px 30px; border-radius: 50px;
+    font-size: 16px; font-weight: 800;
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .small-btn:hover { transform: scale(1.05); }
+
+  /* Back button */
+  #back-btn {
+    position: fixed; top: 12px; left: 12px;
+    z-index: 200;
+    background: rgba(0,0,0,0.5);
+    color: white; border: none;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  #back-btn:hover { background: rgba(255,107,157,0.5); }
+</style>
+</head>
+<body>
+
+<button id="back-btn" onclick="location.href='hub.html'">←</button>
+<canvas id="canvas"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-box">🐷 Floor: <span id="floor-display">0</span></div>
+  <div class="hud-box">⭐ Score: <span id="score-display">0</span></div>
+  <div class="hud-box">🔥 Perfect: <span id="combo-display">0</span></div>
+</div>
+
+<!-- START -->
+<div class="overlay" id="start-screen">
+  <h1>🏗️ Pig Tower!</h1>
+  <div class="subtitle">Stack piggies to the sky!</div>
+  <button class="big-btn" id="start-btn">🐷 BUILD!</button>
+  <div class="hint">Click or tap to drop each block!<br>Line them up perfectly for bonus points!</div>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay hidden" id="game-over">
+  <div class="trophy" id="go-trophy">🏗️</div>
+  <h1 id="go-title" style="color:#ffd32a">Great Tower!</h1>
+  <div class="result" id="go-subtitle">Look how tall!</div>
+  <div class="final-score" id="go-score">0</div>
+  <div class="score-label">floors stacked</div>
+  <div class="btn-row">
+    <button class="big-btn" onclick="startGame()">🔄 AGAIN!</button>
+    <button class="small-btn" onclick="location.href='hub.html'">🐷 PIGGY WORLD</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ===== CONFIG =====
+const BLOCK_HEIGHT = 60;
+const START_WIDTH = 200;
+const SWING_SPEED_START = 1.2;
+const SWING_SPEED_MAX = 3;
+const SPEED_INCREASE = 0.04;
+const DROP_GAP = 200;
+const PERFECT_THRESHOLD = 6;     // pixels off to count as "perfect"
+const FORGIVE_THRESHOLD = 12;    // pixels off before any trimming
+
+// ===== COLORS =====
+const BLOCK_COLORS = [
+  '#ff6b9d', '#ff9f43', '#ffd32a', '#4aff4a',
+  '#00d2d3', '#6b5ce7', '#a855f7', '#ff6b6b',
+  '#f368e0', '#48dbfb', '#ff9ff3', '#54a0ff',
+];
+const PIG_EMOJIS = ['🐷', '🐖', '🐽', '🐗'];
+
+// ===== STATE =====
+let blocks = [];
+let currentBlock = null;
+let gameRunning = false;
+let score = 0;
+let combo = 0;       // consecutive perfects
+let bestCombo = 0;
+let cameraY = 0;
+let targetCameraY = 0;
+let particles = [];
+let fallingPieces = [];
+let swingSpeed = SWING_SPEED_START;
+let swingDir = 1;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ===== BLOCK =====
+function baseBlock() {
+  return {
+    x: (canvas.width - START_WIDTH) / 2,
+    y: canvas.height - BLOCK_HEIGHT - 20,
+    w: START_WIDTH,
+    h: BLOCK_HEIGHT,
+    color: BLOCK_COLORS[0],
+    emoji: '🐷',
+    settled: true
+  };
+}
+
+function newSwingingBlock(prevBlock) {
+  const idx = blocks.length % BLOCK_COLORS.length;
+  const w = prevBlock.w;
+  const topOfScreen = -cameraY + 20;
+  return {
+    x: -w,   // start off-screen left
+    y: topOfScreen,
+    landY: prevBlock.y - BLOCK_HEIGHT,
+    w: w,
+    h: BLOCK_HEIGHT,
+    color: BLOCK_COLORS[idx],
+    emoji: PIG_EMOJIS[blocks.length % PIG_EMOJIS.length],
+    settled: false,
+    dropping: false,
+    dropSpeed: 0
+  };
+}
+
+// ===== START =====
+function startGame() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('game-over').classList.add('hidden');
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('back-btn').style.display = 'flex';
+
+  blocks = [baseBlock()];
+  score = 0;
+  combo = 0;
+  bestCombo = 0;
+  particles = [];
+  fallingPieces = [];
+  swingSpeed = SWING_SPEED_START;
+  cameraY = 0;
+  targetCameraY = 0;
+  gameRunning = true;
+
+  currentBlock = newSwingingBlock(blocks[blocks.length - 1]);
+  updateHUD();
+  gameLoop();
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+
+// ===== DROP =====
+function dropBlock() {
+  if (!gameRunning || !currentBlock) return;
+  if (currentBlock.dropping) return; // already dropping
+
+  // Start the drop animation
+  currentBlock.dropping = true;
+  currentBlock.dropSpeed = 0;
+}
+
+function landBlock() {
+  const prev = blocks[blocks.length - 1];
+  const cur = currentBlock;
+
+  // Calculate overlap
+  const overlapLeft = Math.max(cur.x, prev.x);
+  const overlapRight = Math.min(cur.x + cur.w, prev.x + prev.w);
+  const overlapW = overlapRight - overlapLeft;
+
+  if (overlapW <= 0) {
+    // Missed completely! Game over
+    fallingPieces.push({
+      x: cur.x, y: cur.y, w: cur.w, h: cur.h,
+      color: cur.color, vy: 0, vx: swingDir * 2
+    });
+    gameOver();
+    return;
+  }
+
+  const offset = Math.abs((cur.x + cur.w / 2) - (prev.x + prev.w / 2));
+
+  if (offset <= PERFECT_THRESHOLD) {
+    // PERFECT! Keep same width, snap to center
+    cur.x = prev.x;
+    cur.w = prev.w;
+    cur.settled = true;
+    combo++;
+    if (combo > bestCombo) bestCombo = combo;
+    score += 10 + combo * 5;
+    // Perfect particles!
+    for (let i = 0; i < 20; i++) {
+      particles.push({
+        x: cur.x + cur.w / 2,
+        y: cur.y,
+        vx: (Math.random() - 0.5) * 8,
+        vy: -Math.random() * 6 - 2,
+        life: 1,
+        color: '#ffd32a',
+        size: 4 + Math.random() * 4
+      });
+    }
+  } else if (offset <= FORGIVE_THRESHOLD) {
+    // Close enough - forgive it, snap to center
+    cur.x = prev.x;
+    cur.w = prev.w;
+    cur.settled = true;
+    combo = 0;
+    score += 10;
+  } else {
+    // Trim the overhanging part
+    const trimmedW = overlapW;
+    // Create falling piece for the trimmed part
+    if (cur.x < prev.x) {
+      // Overhang on the left
+      fallingPieces.push({
+        x: cur.x, y: cur.y, w: cur.x + cur.w - overlapRight, h: cur.h,
+        color: cur.color, vy: 0, vx: -2
+      });
+      // Wait, let me recalculate. The overhang on left:
+      // falling piece is from cur.x to overlapLeft
+      fallingPieces.pop();
+      const fallW = overlapLeft - cur.x;
+      if (fallW > 2) {
+        fallingPieces.push({
+          x: cur.x, y: cur.y, w: fallW, h: cur.h,
+          color: cur.color, vy: 0, vx: -2
+        });
+      }
+    } else {
+      // Overhang on the right
+      const fallW = (cur.x + cur.w) - overlapRight;
+      if (fallW > 2) {
+        fallingPieces.push({
+          x: overlapRight, y: cur.y, w: fallW, h: cur.h,
+          color: cur.color, vy: 0, vx: 2
+        });
+      }
+    }
+    cur.x = overlapLeft;
+    cur.w = trimmedW;
+    cur.settled = true;
+    combo = 0;
+    score += 5;
+  }
+
+  blocks.push(cur);
+
+  // Check if block too small = game over
+  if (cur.w < 15) {
+    gameOver();
+    return;
+  }
+
+  // Move camera up
+  targetCameraY = Math.max(0, (blocks.length - 6) * BLOCK_HEIGHT);
+
+  // Speed up a little
+  swingSpeed = Math.min(SWING_SPEED_MAX, swingSpeed + SPEED_INCREASE);
+
+  // Next block
+  currentBlock = newSwingingBlock(cur);
+  updateHUD();
+}
+
+// Input
+window.addEventListener('click', dropBlock);
+window.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    if (!gameRunning && document.getElementById('start-screen').classList.contains('hidden')) {
+      startGame();
+    } else {
+      dropBlock();
+    }
+  }
+});
+
+// ===== HUD =====
+function updateHUD() {
+  document.getElementById('floor-display').textContent = blocks.length - 1;
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('combo-display').textContent = combo;
+}
+
+// ===== GAME OVER =====
+function gameOver() {
+  gameRunning = false;
+  currentBlock = null;
+
+  const floors = blocks.length - 1;
+  let trophy, title, subtitle;
+  if (floors >= 30) {
+    trophy = '🌟'; title = 'LEGENDARY!'; subtitle = 'You touched the stars!';
+  } else if (floors >= 20) {
+    trophy = '🏆'; title = 'AMAZING!'; subtitle = 'Sky-high piggies!';
+  } else if (floors >= 12) {
+    trophy = '🎉'; title = 'GREAT TOWER!'; subtitle = 'The piggies are so high up!';
+  } else if (floors >= 5) {
+    trophy = '🐷'; title = 'NICE TRY!'; subtitle = 'Keep stacking!';
+  } else {
+    trophy = '🧱'; title = 'OOPS!'; subtitle = 'Try again!';
+  }
+
+  setTimeout(() => {
+    document.getElementById('go-trophy').textContent = trophy;
+    document.getElementById('go-title').textContent = title;
+    document.getElementById('go-title').style.color = floors >= 20 ? '#ffd32a' : '#ff6b9d';
+    document.getElementById('go-subtitle').textContent = subtitle;
+    document.getElementById('go-score').textContent = floors;
+    document.getElementById('game-over').classList.remove('hidden');
+  }, 600);
+}
+
+// ===== GAME LOOP =====
+function gameLoop() {
+  update();
+  draw();
+  if (gameRunning || fallingPieces.length > 0 || Math.abs(cameraY - targetCameraY) > 1) {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+function update() {
+  // Swing or drop current block
+  if (currentBlock && gameRunning) {
+    if (currentBlock.dropping) {
+      // Falling down
+      currentBlock.dropSpeed += 0.1;
+      currentBlock.y += currentBlock.dropSpeed;
+      if (currentBlock.y >= currentBlock.landY) {
+        currentBlock.y = currentBlock.landY;
+        currentBlock.dropping = false;
+        landBlock();
+      }
+    } else {
+      // Swinging side to side
+      currentBlock.x += swingSpeed * swingDir;
+      if (currentBlock.x + currentBlock.w > canvas.width - 20) {
+        swingDir = -1;
+      } else if (currentBlock.x < 20) {
+        swingDir = 1;
+      }
+    }
+  }
+
+  // Smooth camera
+  cameraY += (targetCameraY - cameraY) * 0.08;
+
+  // Falling pieces
+  fallingPieces.forEach(p => {
+    p.vy += 0.4;
+    p.y += p.vy;
+    p.x += p.vx;
+  });
+  fallingPieces = fallingPieces.filter(p => p.y < canvas.height + 200);
+
+  // Particles
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.life -= 0.02;
+  });
+  particles = particles.filter(p => p.life > 0);
+}
+
+function draw() {
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const skyProgress = Math.min(1, (blocks.length - 1) / 30);
+  if (skyProgress < 0.3) {
+    grad.addColorStop(0, '#1a0a2e');
+    grad.addColorStop(1, '#2d1b69');
+  } else if (skyProgress < 0.7) {
+    grad.addColorStop(0, '#0a1628');
+    grad.addColorStop(1, '#1a0a2e');
+  } else {
+    grad.addColorStop(0, '#000010');
+    grad.addColorStop(0.4, '#0a0a2a');
+    grad.addColorStop(1, '#1a0a2e');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars in background (more as you go higher)
+  const starCount = Math.min(60, 10 + blocks.length * 2);
+  for (let i = 0; i < starCount; i++) {
+    // Deterministic "random" star positions based on index
+    const sx = ((i * 137.5) % W);
+    const sy = ((i * 97.3 + i * i * 3.7) % H);
+    const brightness = 0.3 + 0.5 * Math.sin(Date.now() * 0.001 + i * 1.7);
+    ctx.globalAlpha = brightness;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(0, cameraY);
+
+  // Ground
+  ctx.fillStyle = '#3a2a1a';
+  const groundY = canvas.height - 18;
+  ctx.fillRect(0, groundY, W, 40);
+  ctx.fillStyle = '#4a3a2a';
+  ctx.fillRect(0, groundY, W, 4);
+
+  // Draw settled blocks
+  blocks.forEach((b, i) => {
+    drawBlock(b, i);
+  });
+
+  // Draw current swinging block
+  if (currentBlock && gameRunning) {
+    drawBlock(currentBlock, blocks.length);
+    // Draw guide line
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(currentBlock.x, currentBlock.y + currentBlock.h);
+    ctx.lineTo(currentBlock.x, canvas.height);
+    ctx.moveTo(currentBlock.x + currentBlock.w, currentBlock.y + currentBlock.h);
+    ctx.lineTo(currentBlock.x + currentBlock.w, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Falling pieces (piggies tumbling off!)
+  fallingPieces.forEach(p => {
+    ctx.globalAlpha = 0.7;
+    const pigSize = p.h * 0.85;
+    const pigCount = Math.max(1, Math.floor(p.w / pigSize));
+    ctx.font = pigSize + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < pigCount; i++) {
+      ctx.fillText('🐷', p.x + pigSize / 2 + i * pigSize, p.y + p.h / 2);
+    }
+    ctx.globalAlpha = 1;
+  });
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Perfect text pop
+  if (combo >= 2 && gameRunning) {
+    const topBlock = blocks[blocks.length - 1];
+    ctx.font = 'bold 24px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd32a';
+    ctx.fillText('PERFECT x' + combo + '!', topBlock.x + topBlock.w / 2, topBlock.y - 15);
+  }
+
+  ctx.restore();
+}
+
+function drawBlock(block, index) {
+  // Draw a row of BIG piggies - no brick, just piggies!
+  const pigSize = block.h * 0.85;
+  const pigCount = Math.max(1, Math.floor(block.w / pigSize));
+  const totalPigsWidth = pigCount * pigSize;
+  const startX = block.x + (block.w - totalPigsWidth) / 2 + pigSize / 2;
+
+  ctx.font = pigSize + 'px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i < pigCount; i++) {
+    const px = startX + i * pigSize;
+    ctx.fillText(block.emoji, px, block.y + block.h / 2 + 2);
+  }
+}
+</script>
+</body>
+</html>
