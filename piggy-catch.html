@@ -248,8 +248,8 @@
   <div class="screen-title">Piggy Catch!</div>
   <div class="screen-sub">Piggies are falling from the sky!<br>Catch them in your basket!</div>
   <div class="instructions">
-    <div class="instr-item"><span class="icon">🖱️</span>Move your mouse to move the basket</div>
-    <div class="instr-item"><span class="icon">⬅️➡️</span>Or use arrow keys</div>
+    <div class="instr-item"><span class="icon">👆</span>Drag your finger to move the basket</div>
+    <div class="instr-item"><span class="icon">🖱️</span>Or use the mouse or arrow keys</div>
     <div class="instr-item"><span class="icon">🐷</span>Miss 3 piggies and it's game over!</div>
   </div>
   <button class="screen-btn" id="start-btn">▶ START!</button>
@@ -297,6 +297,16 @@ document.addEventListener('mousemove', e => {
   // Adjust for game area top offset
   basketX = e.clientX;
 });
+
+// Same thing with a finger, so phones work. Guarded on `running` so the
+// START and AGAIN buttons stay tappable — preventDefault would eat those taps.
+function moveBasketByTouch(e) {
+  if (!running) return;
+  e.preventDefault();
+  basketX = e.touches[0].clientX;
+}
+document.addEventListener('touchstart', moveBasketByTouch, { passive: false });
+document.addEventListener('touchmove',  moveBasketByTouch, { passive: false });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft')  arrowLeft  = true;
